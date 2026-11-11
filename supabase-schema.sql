@@ -61,3 +61,4 @@ CREATE POLICY "Public delete orders" ON orders
 -- 3. Activer la réplication en temps réel (Realtime)
 -- Permet au tableau de bord d'afficher instantanément les nouvelles commandes sans recharger la page
 ALTER PUBLICATION supabase_realtime ADD TABLE orders;
+
