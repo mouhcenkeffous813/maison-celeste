@@ -53,3 +53,4 @@ L'application allie l'esthétique raffinée d'une maison de haute joaillerie et 
 2. **Équipe Gestionnaire / Commerçant (Back-Office) :**
    - Gérant de la boutique traitant les commandes quotidiennes par téléphone ou WhatsApp.
    - Préparateurs de commandes éditant des bordereaux de livraison et modifiant les statuts (*En attente*, *Confirmée*, *En préparation*, *Expédiée*, *Livrée*, *Annulée*).
+

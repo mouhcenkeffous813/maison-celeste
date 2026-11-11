@@ -11,10 +11,10 @@ Le point d'entrée [`src/App.tsx`](file:///c:/Users/Mohcen/Desktop/e-commerce/sr
 ```mermaid
 graph TD
     Root["StoreProvider (StoreContext.tsx)"] --> AppContent["AppContent (App.tsx)"]
-    
+  
     AppContent -->|currentView === 'admin'| AdminLayout["AdminLayout.tsx"]
     AppContent -->|currentView !== 'admin'| StorefrontShell["Storefront Shell"]
-    
+  
     subgraph "Composants Administrateur"
         AdminLayout --> AdminLogin["AdminLogin (si non connecté)"]
         AdminLayout --> AdminOverview["AdminOverview (KPIs & Graphiques)"]
@@ -45,6 +45,7 @@ graph TD
 ## 2. Gestion de l'État Global (`StoreContext.tsx`)
 
 Le contexte unifié [`src/context/StoreContext.tsx`](file:///c:/Users/Mohcen/Desktop/e-commerce/src/context/StoreContext.tsx) centralise :
+
 1. **La navigation applicative :** `currentView` (*home*, *product*, *tracking*, *shipping*, *contact*, *admin*), `selectedProductId`, `selectedCategory` et `searchQuery`.
 2. **Les données métier :** `products`, `orders`, `wilayas`, `config`, `reviews`, `categories`.
 3. **Les actions métier réutilisables :** `createOrder`, `updateOrderStatus`, `createProduct`, `updateProduct`, `deleteProduct`, `addCategory`, `deleteCategory`, `updateWilaya`, `updateConfig`, `simulateDemoOrder`.
@@ -52,10 +53,13 @@ Le contexte unifié [`src/context/StoreContext.tsx`](file:///c:/Users/Mohcen/Des
 5. **Le système de notifications éphémères :** `showToast(message, type)`.
 
 ### Synchronisation Réactive Multi-Onglets
+
 Lorsqu'une commande est passée ou qu'un produit est mis à jour dans un composant, le service [`api.ts`](file:///c:/Users/Mohcen/Desktop/e-commerce/src/services/api.ts) émet un événement DOM personnalisé :
+
 ```ts
 window.dispatchEvent(new CustomEvent('elissia_store_update', { detail: { key, data } }));
 ```
+
 Le `StoreContext` écoute cet événement et rafraîchit automatiquement l'état local dans tous les composants ouverts sans rechargement de page.
 
 ---
@@ -63,7 +67,9 @@ Le `StoreContext` écoute cet événement et rafraîchit automatiquement l'état
 ## 3. Système de Design et Thèmes Dynamiques
 
 ### Variables CSS et Thèmes Préréglés
+
 Dans [`src/config/store.config.ts`](file:///c:/Users/Mohcen/Desktop/e-commerce/src/config/store.config.ts), 5 chartes de couleurs sont disponibles :
+
 - **Rose Poudré (Signature)** : `#D48C98` (teinte féminine emblématique)
 - **Or Rose & Soie (Prestige)** : `#C48B71`
 - **Lavande Douce (Cosmétiques)** : `#9F86C0`
@@ -71,6 +77,7 @@ Dans [`src/config/store.config.ts`](file:///c:/Users/Mohcen/Desktop/e-commerce/s
 - **Noir & Or (Haute Joaillerie)** : `#2B2B2B` & `#C5A059`
 
 La fonction `applyThemeVariables(theme)` injecte dynamiquement ces couleurs à la racine `:root` du DOM :
+
 ```css
 :root {
   --color-primary: #D48C98;
@@ -81,6 +88,7 @@ La fonction `applyThemeVariables(theme)` injecte dynamiquement ces couleurs à l
   --color-accent: #E05A6D;
 }
 ```
+
 Tailwind CSS fait référence à ces variables dans [`tailwind.config.js`](file:///c:/Users/Mohcen/Desktop/e-commerce/tailwind.config.js), ce qui permet à l'administrateur de changer instantanément l'aspect visuel de toute la boutique sans reconstruire le code source.
 
 ---

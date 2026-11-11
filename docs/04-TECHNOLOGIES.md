@@ -65,3 +65,4 @@ Configurées dans [`index.html`](file:///c:/Users/Mohcen/Desktop/e-commerce/inde
    - Aucune latence serveur lors des clics ou du changement d'onglets. Le calcul des frais des 58 wilayas et la filtration des catégories s'exécutent directement dans le navigateur du client en moins de 5 millisecondes.
 3. **Résilience et tolérance aux coupures :**
    - L'application continue de fonctionner et de calculer les totaux même si la connexion mobile 3G/4G de l'acheteur subit des micro-coupures.
+

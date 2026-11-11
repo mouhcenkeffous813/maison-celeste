@@ -84,3 +84,4 @@ Ce document recense l'ensemble des fonctionnalités implémentées dans le proje
 - Modification du nom commercial, du slogan, du logo et des coordonnées de contact (WhatsApp, téléphone).
 - Modification du code PIN administrateur.
 - **Sélecteur de thèmes CSS :** Changement en direct entre 5 chartes chromatiques prédéfinies (*Rose Poudré Signature*, *Or Rose & Soie*, *Lavande Douce*, *Nude & Cachemire*, *Noir & Or Haute Joaillerie*).
+

@@ -82,3 +82,4 @@ Si une modification déployée sur Vercel ou Netlify présente une anomalie en p
 3. Repérez le déploiement précédent fonctionnel.
 4. Cliquez sur les trois petits points `...` ➔ **« Instant Rollback »** (ou **« Promote to Production »**).
 5. En moins de 3 secondes, l'ancienne version stable redevient active sur l'URL publique.
+

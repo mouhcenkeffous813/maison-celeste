@@ -107,3 +107,4 @@ git commit -m "Mise a jour du catalogue"
 git push origin main
 ```
 Vercel et Netlify détectent instantanément le push, recompilent le projet et mettent à jour le site en ligne en moins de 30 secondes, sans interruption de service pour vos clients !
+

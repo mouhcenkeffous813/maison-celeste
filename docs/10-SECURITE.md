@@ -65,3 +65,4 @@ Le modèle COD présente un risque inhérent de commandes fantômes ou de refus 
    - Le commerçant peut repérer dans le tableau de bord les numéros de téléphone ayant cumulé des commandes annulées ou suspectes.
 3. **Calcul Transparent des Frais de Port :**
    - L'affichage clair et contractuel du coût total (prix du bijou + frais d'envoi vers la Wilaya sélectionnée) élimine les mauvaises surprises pour le client au moment de payer le livreur en espèces.
+

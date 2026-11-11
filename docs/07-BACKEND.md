@@ -144,3 +144,4 @@ export const api = {
   // ... Les composants de l'interface restent 100% inchangés
 };
 ```
+

@@ -102,3 +102,4 @@ Ce document décrit le contrat d'API complet exposé par le module [`src/service
 
 ### `api.addReview(data): Promise<Review>`
 - **Description :** Ajoute un avis client vérifié, date l'avis en français et **recalcule automatiquement la note moyenne (`rating`) et le nombre total d'avis (`reviewCount`)** de la fiche produit concernée.
+

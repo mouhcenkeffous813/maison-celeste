@@ -115,3 +115,4 @@ e-commerce/
 
 ### `src/services/api.ts`
 - Fournit l'intégralité des opérations asynchrones. Il encapsule la sérialisation, la gestion des identifiants uniques, la déduction automatique des stocks et la notification des composants via l'événement personnalisé `elissia_store_update`.
+

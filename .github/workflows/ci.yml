@@ -25,3 +25,4 @@ jobs:
 
     - name: Verify TypeScript & Build Bundle
       run: npm run build
+

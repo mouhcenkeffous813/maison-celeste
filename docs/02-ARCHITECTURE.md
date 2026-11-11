@@ -111,3 +111,4 @@ graph TD
     Interface -.->|Migration Optionnelle| SupabaseDriver["Supabase Client (PostgreSQL + Auth)"]
     Interface -.->|Migration Optionnelle| RestDriver["REST API (Node.js / Express / NestJS)"]
 ```
+

@@ -203,3 +203,4 @@ Pour garantir l'intégrité des données sans interférence entre différentes v
 | `celeste_categories_v10` | Liste dynamique des catégories gérées | 6 catégories officielles |
 | `celeste_config_v10` | Paramètres généraux, téléphone, thème CSS | Configuration dans [`store.config.ts`](file:///c:/Users/Mohcen/Desktop/e-commerce/src/config/store.config.ts) |
 | `celeste_reviews_v10` | Avis et témoignages clients géolocalisés | Avis dans [`mockReviews.ts`](file:///c:/Users/Mohcen/Desktop/e-commerce/src/data/mockReviews.ts) |
+

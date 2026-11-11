@@ -4,6 +4,65 @@ import { INITIAL_ORDERS } from '../data/mockOrders';
 import { INITIAL_REVIEWS } from '../data/mockReviews';
 import { DEFAULT_STORE_CONFIG, applyThemeVariables } from '../config/store.config';
 import rawWilayas from '../config/wilayas.json';
+import { supabase, isSupabaseConfigured } from './supabaseClient';
+
+function mapDbToOrder(row: any): Order {
+  return {
+    id: row.id,
+    orderNumber: row.order_number,
+    customerName: row.customer_name,
+    customerPhone: row.customer_phone,
+    wilayaId: Number(row.wilaya_id),
+    wilayaName: row.wilaya_name,
+    commune: row.commune,
+    address: row.address,
+    deliveryType: (row.delivery_type as 'home' | 'desk') || 'home',
+    productId: row.product_id,
+    productTitle: row.product_title,
+    productImage: row.product_image,
+    selectedColor: row.selected_color || '',
+    selectedSize: row.selected_size || '',
+    quantity: Number(row.quantity) || 1,
+    unitPrice: Number(row.unit_price) || 0,
+    productTotal: Number(row.product_total) || 0,
+    shippingFee: Number(row.shipping_fee) || 0,
+    grandTotal: Number(row.grand_total) || 0,
+    status: (row.status as OrderStatus) || 'pending',
+    trackingCode: row.tracking_code || undefined,
+    notes: row.notes || undefined,
+    createdAt: row.created_at || new Date().toISOString(),
+    updatedAt: row.updated_at || new Date().toISOString(),
+  };
+}
+
+function mapOrderToDb(order: Order) {
+  return {
+    id: order.id,
+    order_number: order.orderNumber,
+    customer_name: order.customerName,
+    customer_phone: order.customerPhone,
+    wilaya_id: order.wilayaId,
+    wilaya_name: order.wilayaName,
+    commune: order.commune,
+    address: order.address,
+    delivery_type: order.deliveryType,
+    product_id: order.productId,
+    product_title: order.productTitle,
+    product_image: order.productImage,
+    selected_color: order.selectedColor,
+    selected_size: order.selectedSize,
+    quantity: order.quantity,
+    unit_price: order.unitPrice,
+    product_total: order.productTotal,
+    shipping_fee: order.shippingFee,
+    grand_total: order.grandTotal,
+    status: order.status,
+    tracking_code: order.trackingCode || null,
+    notes: order.notes || null,
+    created_at: order.createdAt,
+    updated_at: order.updatedAt,
+  };
+}
 
 const STORAGE_KEYS = {
   PRODUCTS: 'celeste_products_v11',
@@ -136,8 +195,26 @@ export const api = {
 
   // ===================== ORDERS (COD ALGERIA) =====================
   async getOrders(): Promise<Order[]> {
+    // 1. Tenter la récupération depuis Supabase Cloud si connecté
+    if (supabase && isSupabaseConfigured) {
+      try {
+        const { data, error } = await supabase
+          .from('orders')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (!error && Array.isArray(data)) {
+          const cloudOrders = data.map(mapDbToOrder);
+          saveToStorage(STORAGE_KEYS.ORDERS, cloudOrders);
+          return cloudOrders;
+        }
+      } catch (err) {
+        console.warn('[Supabase] Erreur de lecture des commandes distantes, bascule locale', err);
+      }
+    }
+
+    // 2. Repli automatique sur le stockage local
     const raw = loadFromStorage<Order[]>(STORAGE_KEYS.ORDERS, INITIAL_ORDERS);
-    // Deduplicate in case any past duplicate exists
     const seen = new Set<string>();
     const cleaned: Order[] = [];
     for (const ord of raw) {
@@ -147,7 +224,6 @@ export const api = {
         cleaned.push(ord);
       }
     }
-    // If duplicates were pruned, update localStorage silently
     if (cleaned.length !== raw.length) {
       try {
         localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(cleaned));
@@ -159,13 +235,33 @@ export const api = {
   },
 
   async getOrderById(id: string): Promise<Order | null> {
+    if (supabase && isSupabaseConfigured) {
+      try {
+        const { data, error } = await supabase.from('orders').select('*').eq('id', id).single();
+        if (!error && data) return mapDbToOrder(data);
+      } catch (e) {
+        // Fallback
+      }
+    }
     const orders = await this.getOrders();
     return orders.find(o => o.id === id) || null;
   },
 
   async getOrdersByPhone(phone: string): Promise<Order[]> {
-    const orders = await this.getOrders();
     const cleanQuery = phone.replace(/\s+/g, '');
+    if (supabase && isSupabaseConfigured) {
+      try {
+        const { data, error } = await supabase
+          .from('orders')
+          .select('*')
+          .ilike('customer_phone', `%${cleanQuery}%`)
+          .order('created_at', { ascending: false });
+        if (!error && Array.isArray(data)) return data.map(mapDbToOrder);
+      } catch (e) {
+        // Fallback
+      }
+    }
+    const orders = await this.getOrders();
     return orders.filter(o => o.customerPhone.replace(/\s+/g, '').includes(cleanQuery));
   },
 
@@ -185,14 +281,29 @@ export const api = {
       updatedAt: new Date().toISOString(),
     };
 
-    // Filter out any potential collision
+    // 1. Sauvegarde dans le Cloud Supabase
+    if (supabase && isSupabaseConfigured) {
+      try {
+        const payload = mapOrderToDb(newOrder);
+        const { error } = await supabase.from('orders').insert([payload]);
+        if (error) {
+          console.warn('[Supabase] Erreur insertion commande distante:', error.message);
+        } else {
+          console.log('[Supabase] Commande synchronisée dans le Cloud avec succès !', orderNumber);
+        }
+      } catch (err) {
+        console.warn('[Supabase] Exception réseau lors de la création de la commande:', err);
+      }
+    }
+
+    // 2. Cache local réactif
     const updated = [
       newOrder,
       ...orders.filter(o => o.id !== uniqueId && o.orderNumber !== orderNumber),
     ];
     saveToStorage(STORAGE_KEYS.ORDERS, updated);
 
-    // Deduct stock if matching variant is found
+    // Déduction automatique du stock de variante
     try {
       const products = await this.getProducts();
       const product = products.find(p => p.id === data.productId);
@@ -232,6 +343,23 @@ export const api = {
     };
     orders[index] = updatedOrder;
     saveToStorage(STORAGE_KEYS.ORDERS, [...orders]);
+
+    // Synchronisation Supabase
+    if (supabase && isSupabaseConfigured) {
+      try {
+        await supabase
+          .from('orders')
+          .update({
+            status,
+            ...(notes !== undefined ? { notes } : {}),
+            updated_at: updatedOrder.updatedAt,
+          })
+          .eq('id', orderId);
+      } catch (e) {
+        console.warn('[Supabase] Erreur de mise à jour du statut distant:', e);
+      }
+    }
+
     return updatedOrder;
   },
 
@@ -239,6 +367,16 @@ export const api = {
     const orders = await this.getOrders();
     const filtered = orders.filter(o => o.id !== orderId);
     saveToStorage(STORAGE_KEYS.ORDERS, filtered);
+
+    // Suppression Supabase
+    if (supabase && isSupabaseConfigured) {
+      try {
+        await supabase.from('orders').delete().eq('id', orderId);
+      } catch (e) {
+        console.warn('[Supabase] Erreur suppression commande distante:', e);
+      }
+    }
+
     return true;
   },
 

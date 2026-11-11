@@ -143,3 +143,4 @@ L'ensemble de l'architecture et des composants est documenté de manière exhaus
 ---
 
 *Développé avec excellence pour Maison Céleste • Tous droits réservés © 2026.*
+
