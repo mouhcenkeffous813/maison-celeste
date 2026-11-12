@@ -26,6 +26,7 @@ import confetti from 'canvas-confetti';
 import { useStore } from '../../context/StoreContext';
 import { Product, ProductVariant, Order } from '../../types';
 import { calculateDiscountPercentage, formatPrice, validateAlgerianPhone, formatAlgerianPhone } from '../../utils/formatters';
+import { trackingManager } from '../../services/trackingManager';
 
 interface ProductPageProps {
   productId: string;
@@ -57,7 +58,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({ productId }) => {
     product.sizes && product.sizes.length > 0 ? product.sizes[0] : ''
   );
 
-  // When product changes, reset variants
+  // When product changes, reset variants and track ViewContent
   useEffect(() => {
     if (product.colors && product.colors.length > 0) {
       setSelectedColor(product.colors[0].name);
@@ -67,7 +68,19 @@ export const ProductPage: React.FC<ProductPageProps> = ({ productId }) => {
     }
     setActiveImageIndex(0);
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [productId]);
+
+    // Track ViewContent for Meta & TikTok Pixels
+    if (product) {
+      trackingManager.trackEvent({
+        eventName: 'ViewContent',
+        contentId: product.id,
+        contentName: product.title,
+        category: product.category,
+        value: product.price,
+        currency: config.currency === 'DA' ? 'DZD' : config.currency,
+      });
+    }
+  }, [productId, product]);
 
   // Handle color change and auto-sync carousel image if configured
   const handleColorSelect = (colorName: string, imageIndex?: number) => {
@@ -75,6 +88,15 @@ export const ProductPage: React.FC<ProductPageProps> = ({ productId }) => {
     if (imageIndex !== undefined && imageIndex < product.images.length) {
       setActiveImageIndex(imageIndex);
     }
+    // Track AddToCart / variant selection intent
+    trackingManager.trackEvent({
+      eventName: 'AddToCart',
+      contentId: product.id,
+      contentName: `${product.title} (${colorName})`,
+      category: product.category,
+      value: product.price,
+      currency: config.currency === 'DA' ? 'DZD' : config.currency,
+    });
   };
 
   // Check stock for a specific size with currently selected color
@@ -231,6 +253,18 @@ export const ProductPage: React.FC<ProductPageProps> = ({ productId }) => {
 
       setCompletedOrder(order);
       window.scrollTo({ top: 0, behavior: 'smooth' });
+
+      // Track Purchase / CompletePayment after order is successfully saved in database
+      trackingManager.trackEvent({
+        eventName: 'Purchase',
+        eventId: `purchase-${order.orderNumber}`,
+        contentId: product.id,
+        contentName: product.title,
+        category: product.category,
+        value: grandTotal,
+        currency: config.currency === 'DA' ? 'DZD' : config.currency,
+        quantity,
+      });
     } catch (err) {
       showToast('Une erreur est survenue lors de la validation.', 'error');
     } finally {
@@ -267,6 +301,15 @@ export const ProductPage: React.FC<ProductPageProps> = ({ productId }) => {
     if (orderFormRef.current) {
       orderFormRef.current.scrollIntoView({ behavior: 'smooth' });
     }
+    // Track InitiateCheckout when customer scrolls to the COD order form
+    trackingManager.trackEvent({
+      eventName: 'InitiateCheckout',
+      contentId: product.id,
+      contentName: product.title,
+      category: product.category,
+      value: product.price,
+      currency: config.currency === 'DA' ? 'DZD' : config.currency,
+    });
   };
 
   // Related products (same category or others)
@@ -613,7 +656,17 @@ export const ProductPage: React.FC<ProductPageProps> = ({ productId }) => {
                             key={size}
                             type="button"
                             disabled={isOutOfStock}
-                            onClick={() => setSelectedSize(size)}
+                            onClick={() => {
+                              setSelectedSize(size);
+                              trackingManager.trackEvent({
+                                eventName: 'AddToCart',
+                                contentId: product.id,
+                                contentName: `${product.title} (Taille ${size})`,
+                                category: product.category,
+                                value: product.price,
+                                currency: config.currency === 'DA' ? 'DZD' : config.currency,
+                              });
+                            }}
                             className={`relative px-4 py-2 rounded-xl text-xs font-semibold transition-all duration-200 border ${
                               isOutOfStock
                                 ? 'bg-stone-100 text-stone-300 border-stone-200 line-through cursor-not-allowed opacity-60'

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { StoreProvider, useStore } from './context/StoreContext';
 import { Navbar } from './components/storefront/Navbar';
 import { HomePage } from './components/storefront/HomePage';
@@ -8,9 +8,29 @@ import { ShippingRates } from './components/storefront/ShippingRates';
 import { ContactPage } from './components/storefront/ContactPage';
 import { Footer } from './components/storefront/Footer';
 import { AdminLayout } from './components/admin/AdminLayout';
+import { CookieConsentBanner } from './components/storefront/CookieConsentBanner';
+import { trackingManager } from './services/trackingManager';
 
 const AppContent: React.FC = () => {
   const { currentView, selectedProductId, isLoading } = useStore();
+
+  // Track PageView on SPA view changes (with deduplication)
+  useEffect(() => {
+    if (currentView !== 'admin') {
+      const pageTitle =
+        currentView === 'home'
+          ? 'Accueil Boutique'
+          : currentView === 'product'
+          ? `Produit: ${selectedProductId || 'Détail'}`
+          : currentView === 'tracking'
+          ? 'Suivi de Commande'
+          : currentView === 'shipping'
+          ? 'Grille des Tarifs Livraison'
+          : 'Page Contact';
+
+      trackingManager.trackPageView(pageTitle);
+    }
+  }, [currentView, selectedProductId]);
 
   if (isLoading) {
     return (
@@ -46,6 +66,7 @@ const AppContent: React.FC = () => {
       </main>
 
       <Footer />
+      <CookieConsentBanner />
     </div>
   );
 };

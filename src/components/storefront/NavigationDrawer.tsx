@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useStore, CurrentView } from '../../context/StoreContext';
 import { searchMatches } from '../../utils/formatters';
+import { trackingManager } from '../../services/trackingManager';
 
 interface NavigationDrawerProps {
   isOpen: boolean;
@@ -92,6 +93,14 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({ isOpen, onCl
               placeholder="Rechercher un produit..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter' && searchQuery.trim()) {
+                  trackingManager.trackEvent({
+                    eventName: 'Search',
+                    searchQuery: searchQuery.trim(),
+                  });
+                }
+              }}
               className="w-full pl-9 pr-3 py-2 text-xs bg-white rounded-lg border border-store-border focus:outline-none focus:border-store-primary shadow-xs"
             />
           </div>

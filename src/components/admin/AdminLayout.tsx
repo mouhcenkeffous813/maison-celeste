@@ -9,7 +9,8 @@ import {
   LogOut,
   Sparkles,
   Menu,
-  X
+  X,
+  Target
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { AdminLogin } from './AdminLogin';
@@ -18,8 +19,9 @@ import { AdminOrders } from './AdminOrders';
 import { AdminProducts } from './AdminProducts';
 import { AdminShipping } from './AdminShipping';
 import { AdminSettings } from './AdminSettings';
+import { AdminMarketing } from './AdminMarketing';
 
-type AdminTab = 'overview' | 'orders' | 'products' | 'shipping' | 'settings';
+type AdminTab = 'overview' | 'orders' | 'products' | 'shipping' | 'marketing' | 'settings';
 
 export const AdminLayout: React.FC = () => {
   const { isAdminLoggedIn, logoutAdmin, setCurrentView, config, orders, simulateDemoOrder } = useStore();
@@ -56,6 +58,12 @@ export const AdminLayout: React.FC = () => {
       id: 'shipping',
       label: 'Tarifs Livraison (58 Wilayas)',
       icon: Truck,
+      badge: null,
+    },
+    {
+      id: 'marketing',
+      label: 'Marketing & Tracking',
+      icon: Target,
       badge: null,
     },
     {
@@ -250,6 +258,7 @@ export const AdminLayout: React.FC = () => {
         {activeTab === 'orders' && <AdminOrders />}
         {activeTab === 'products' && <AdminProducts />}
         {activeTab === 'shipping' && <AdminShipping />}
+        {activeTab === 'marketing' && <AdminMarketing />}
         {activeTab === 'settings' && <AdminSettings />}
       </main>
     </div>
