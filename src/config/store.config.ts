@@ -75,14 +75,14 @@ export const DEFAULT_STORE_CONFIG: StoreConfig = {
 /**
  * Apply theme CSS variables to document root
  */
-export function applyThemeVariables(theme: ThemePreset) {
-  if (typeof document === 'undefined') return;
+export function applyThemeVariables(theme: ThemePreset | undefined | null) {
+  if (typeof document === 'undefined' || !theme) return;
   const root = document.documentElement;
-  root.style.setProperty('--color-primary', theme.primary);
-  root.style.setProperty('--color-primary-hover', theme.primaryHover);
-  root.style.setProperty('--color-primary-light', theme.primaryLight);
-  root.style.setProperty('--color-secondary', theme.secondary);
-  root.style.setProperty('--color-bg-base', theme.bgBase);
-  root.style.setProperty('--color-accent', theme.accent);
+  if (theme.primary) root.style.setProperty('--color-primary', theme.primary);
+  if (theme.primaryHover) root.style.setProperty('--color-primary-hover', theme.primaryHover);
+  if (theme.primaryLight) root.style.setProperty('--color-primary-light', theme.primaryLight);
+  if (theme.secondary) root.style.setProperty('--color-secondary', theme.secondary);
+  if (theme.bgBase) root.style.setProperty('--color-bg-base', theme.bgBase);
+  if (theme.accent) root.style.setProperty('--color-accent', theme.accent);
 }
 

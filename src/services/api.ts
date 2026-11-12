@@ -87,6 +87,15 @@ function mapOrderToDb(order: Order) {
   };
 }
 
+function withTimeout<T>(promise: PromiseLike<T>, ms = 3500): Promise<T> {
+  return Promise.race([
+    Promise.resolve(promise),
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error(`Timeout de connexion Supabase (${ms}ms)`)), ms)
+    ),
+  ]);
+}
+
 const STORAGE_KEYS = {
   PRODUCTS: 'celeste_products_v11',
   ORDERS: 'celeste_orders_v10',
@@ -218,17 +227,18 @@ export const api = {
 
   // ===================== ORDERS (COD ALGERIA) =====================
   async getOrders(): Promise<Order[]> {
-    // 1. Tenter la récupération depuis Supabase Cloud si connecté
+    // 1. Tenter la récupération depuis Supabase Cloud si connecté (avec timeout de sécurité de 3.5s)
     if (supabase && isSupabaseConfigured) {
       try {
-        const { data, error } = await supabase
+        const queryPromise = supabase
           .from('orders')
           .select('*')
           .order('created_at', { ascending: false });
 
+        const { data, error } = await withTimeout<any>(queryPromise, 3500);
+
         if (!error && Array.isArray(data)) {
           const cloudOrders = data.map(mapDbToOrder);
-          // Mise en cache silencieuse dans localStorage SANS déclencher d'événement récursif
           try {
             localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(cloudOrders));
           } catch (e) {
@@ -237,7 +247,7 @@ export const api = {
           return cloudOrders;
         }
       } catch (err) {
-        console.warn('[Supabase] Erreur de lecture des commandes distantes, bascule locale', err);
+        console.warn('[Supabase] Délai dépassé ou erreur commandes distantes, bascule locale immédiate:', err);
       }
     }
 
@@ -491,16 +501,23 @@ export const api = {
   async getStoreConfig(): Promise<StoreConfig> {
     let config = loadFromStorage<StoreConfig>(STORAGE_KEYS.CONFIG, DEFAULT_STORE_CONFIG);
 
-    // Synchronisation depuis le Cloud Supabase (si configuré)
+    // Synchronisation depuis le Cloud Supabase (avec timeout de sécurité de 3.5s)
     if (supabase && isSupabaseConfigured) {
       try {
-        const { data, error } = await supabase
+        const queryPromise = supabase
           .from('store_config')
           .select('*')
           .eq('id', 'current')
           .maybeSingle();
 
+        const { data, error } = await withTimeout<any>(queryPromise, 3500);
+
         if (!error && data) {
+          const validatedTheme =
+            data.theme && typeof data.theme === 'object' && (data.theme as any).primary
+              ? data.theme
+              : config.theme;
+
           config = {
             storeName: data.store_name ?? config.storeName,
             storeTagline: data.store_tagline ?? config.storeTagline,
@@ -512,14 +529,13 @@ export const api = {
             facebookUrl: data.facebook_url ?? config.facebookUrl,
             tiktokUrl: data.tiktok_url ?? config.tiktokUrl,
             freeShippingThreshold: Number(data.free_shipping_threshold ?? config.freeShippingThreshold),
-            theme: data.theme ?? config.theme,
+            theme: validatedTheme,
             metaPixelId: data.meta_pixel_id ?? config.metaPixelId,
             tiktokPixelId: data.tiktok_pixel_id ?? config.tiktokPixelId,
             deliveryTimeEstimate: data.delivery_time_estimate ?? config.deliveryTimeEstimate,
             announcementText: data.announcement_text ?? config.announcementText,
             adminPin: data.admin_pin ?? config.adminPin,
           };
-          // Mise en cache locale silencieuse
           try {
             localStorage.setItem(STORAGE_KEYS.CONFIG, JSON.stringify(config));
           } catch (e) {
@@ -527,7 +543,7 @@ export const api = {
           }
         }
       } catch (err) {
-        // Table non créée ou indisponible, fallback transparent sur le stockage local
+        console.warn('[Supabase] Config cloud ignorée ou délai dépassé, utilisation locale:', err);
       }
     }
 

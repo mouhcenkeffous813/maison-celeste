@@ -239,7 +239,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       setWilayas(wils);
       setConfig(cfg);
       setReviews(revs);
-      applyThemeVariables(cfg.theme);
+      try {
+        applyThemeVariables(cfg.theme);
+      } catch (themeErr) {
+        console.warn('Theme apply fallback:', themeErr);
+      }
     } catch (err) {
       console.error('Error loading store data:', err);
       if (!isSilent) {

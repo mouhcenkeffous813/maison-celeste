@@ -14,6 +14,15 @@ import { trackingManager } from './services/trackingManager';
 
 const AppContent: React.FC = () => {
   const { currentView, selectedProductId, isLoading } = useStore();
+  const [maxLoadingReached, setMaxLoadingReached] = React.useState(false);
+
+  // Safety watchdog: ensure loading spinner never blocks the user for more than 1.8s
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setMaxLoadingReached(true);
+    }, 1800);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Track PageView on SPA view changes (with deduplication)
   useEffect(() => {
@@ -33,7 +42,7 @@ const AppContent: React.FC = () => {
     }
   }, [currentView, selectedProductId]);
 
-  if (isLoading) {
+  if (isLoading && !maxLoadingReached) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-store-base">
         <div className="flex flex-col items-center gap-3">
