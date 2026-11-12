@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Sparkles, Shield, Truck, RotateCcw, MessageCircle, Star, ArrowRight } from 'lucide-react';
+import { Sparkles, Shield, Truck, RotateCcw, MessageCircle, Star, ArrowRight, ShoppingBag } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { calculateDiscountPercentage, formatPrice } from '../../utils/formatters';
 
@@ -11,6 +11,8 @@ export const HomePage: React.FC = () => {
     setSelectedCategory,
     openProductPage,
     categories,
+    addToCart,
+    setIsCartOpen,
   } = useStore();
 
   const allCategories = ['Tout', ...categories];
@@ -238,14 +240,38 @@ export const HomePage: React.FC = () => {
                         )}
                       </div>
 
-                      {/* Full-width COMMANDER Button */}
-                      <button
-                        onClick={() => openProductPage(product.id)}
-                        className="w-full py-2.5 px-3 rounded-xl bg-store-primary text-white text-xs sm:text-sm font-bold tracking-wide uppercase hover:bg-store-primary-hover active:scale-[0.98] transition-all shadow-soft flex items-center justify-center gap-1.5"
-                      >
-                        <span>COMMANDER</span>
-                        <ArrowRight className="w-3.5 h-3.5" />
-                      </button>
+                      {/* CTA Buttons: Add to Cart + Commander */}
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={e => {
+                            e.stopPropagation();
+                            addToCart({
+                              productId: product.id,
+                              productTitle: product.title,
+                              productImage: product.images[0],
+                              selectedColor: product.colors?.[0]?.name || '',
+                              selectedSize: product.sizes?.[0] || '',
+                              quantity: 1,
+                              unitPrice: product.price,
+                              maxStock: product.totalStock || 50,
+                            });
+                            setIsCartOpen(true);
+                          }}
+                          className="p-2.5 rounded-xl border border-stone-200 hover:border-stone-400 hover:bg-stone-50 text-stone-700 transition-all flex items-center justify-center shrink-0"
+                          title="Ajouter au panier"
+                        >
+                          <ShoppingBag className="w-4 h-4 text-store-primary" />
+                        </button>
+
+                        <button
+                          onClick={() => openProductPage(product.id)}
+                          className="flex-1 py-2.5 px-3 rounded-xl bg-store-primary text-white text-xs sm:text-sm font-bold tracking-wide uppercase hover:bg-store-primary-hover active:scale-[0.98] transition-all shadow-soft flex items-center justify-center gap-1.5"
+                        >
+                          <span>COMMANDER</span>
+                          <ArrowRight className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>

@@ -45,6 +45,29 @@ export type OrderStatus =
   | 'delivered'   // Livrée
   | 'cancelled';  // Annulée / Retour
 
+export interface OrderItem {
+  productId: string;
+  productTitle: string;
+  productImage: string;
+  selectedColor?: string;
+  selectedSize?: string;
+  quantity: number;
+  unitPrice: number;
+  totalPrice: number;
+}
+
+export interface CartItem {
+  id: string; // unique key e.g. prodId-color-size
+  productId: string;
+  productTitle: string;
+  productImage: string;
+  selectedColor: string;
+  selectedSize: string;
+  quantity: number;
+  unitPrice: number;
+  maxStock: number;
+}
+
 export interface Order {
   id: string;
   orderNumber: string;
@@ -65,6 +88,7 @@ export interface Order {
   productTotal: number;
   shippingFee: number;
   grandTotal: number;
+  items?: OrderItem[];
   status: OrderStatus;
   trackingCode?: string;
   notes?: string;

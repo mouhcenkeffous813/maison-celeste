@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, useMemo, useRef } from 'react';
 import confetti from 'canvas-confetti';
-import { Product, Order, Wilaya, StoreConfig, Review, OrderStatus, ThemePreset } from '../types';
+import { Product, Order, Wilaya, StoreConfig, Review, OrderStatus, ThemePreset, CartItem } from '../types';
 import { api } from '../services/api';
 import { DEFAULT_STORE_CONFIG, applyThemeVariables } from '../config/store.config';
 
@@ -30,6 +30,17 @@ interface StoreContextType {
   config: StoreConfig;
   reviews: Review[];
   isLoading: boolean;
+
+  // Cart Management
+  cart: CartItem[];
+  isCartOpen: boolean;
+  setIsCartOpen: (open: boolean) => void;
+  addToCart: (item: Omit<CartItem, 'id'>) => void;
+  removeFromCart: (cartItemId: string) => void;
+  updateCartQuantity: (cartItemId: string, quantity: number) => void;
+  clearCart: () => void;
+  cartTotalCount: number;
+  cartSubtotal: number;
 
   // Actions
   refreshAll: () => Promise<void>;
@@ -92,6 +103,72 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState<boolean>(() => {
     return sessionStorage.getItem('elissia_admin_auth') === 'true';
   });
+
+  // Cart State (Persisted in localStorage)
+  const [cart, setCart] = useState<CartItem[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('maison_celeste_cart');
+        return stored ? JSON.parse(stored) : [];
+      } catch {
+        return [];
+      }
+    }
+    return [];
+  });
+  const [isCartOpen, setIsCartOpen] = useState(false);
+
+  // Sync cart to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('maison_celeste_cart', JSON.stringify(cart));
+    } catch {
+      // ignore
+    }
+  }, [cart]);
+
+  const cartTotalCount = useMemo(() => {
+    return cart.reduce((sum, item) => sum + item.quantity, 0);
+  }, [cart]);
+
+  const cartSubtotal = useMemo(() => {
+    return cart.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0);
+  }, [cart]);
+
+  const addToCart = (item: Omit<CartItem, 'id'>) => {
+    const cartItemId = `${item.productId}-${item.selectedColor || 'def'}-${item.selectedSize || 'def'}`;
+    setCart(prev => {
+      const existing = prev.find(i => i.id === cartItemId);
+      if (existing) {
+        const newQty = Math.min(existing.quantity + item.quantity, item.maxStock || 99);
+        return prev.map(i => (i.id === cartItemId ? { ...i, quantity: newQty } : i));
+      }
+      return [...prev, { ...item, id: cartItemId }];
+    });
+    showToast(`${item.productTitle} ajouté au panier !`, 'success');
+  };
+
+  const removeFromCart = (cartItemId: string) => {
+    setCart(prev => prev.filter(item => item.id !== cartItemId));
+  };
+
+  const updateCartQuantity = (cartItemId: string, quantity: number) => {
+    if (quantity <= 0) {
+      removeFromCart(cartItemId);
+      return;
+    }
+    setCart(prev =>
+      prev.map(item =>
+        item.id === cartItemId
+          ? { ...item, quantity: Math.min(quantity, item.maxStock || 99) }
+          : item
+      )
+    );
+  };
+
+  const clearCart = () => {
+    setCart([]);
+  };
 
   const isFetchingRef = useRef(false);
 
@@ -461,6 +538,17 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         wilayas,
         config,
         reviews,
+        // Cart
+        cart,
+        isCartOpen,
+        setIsCartOpen,
+        addToCart,
+        removeFromCart,
+        updateCartQuantity,
+        clearCart,
+        cartTotalCount,
+        cartSubtotal,
+
         isLoading,
         refreshAll: () => loadData(true),
         createOrder,

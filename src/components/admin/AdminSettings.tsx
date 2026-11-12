@@ -10,17 +10,22 @@ import {
   Sparkles,
   Save,
   RotateCcw,
-  Check
+  Check,
+  Upload,
+  Image as ImageIcon,
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { THEME_PRESETS } from '../../config/store.config';
 import { ThemePreset } from '../../types';
+import { compressImageFile } from '../../utils/imageCompressor';
 
 export const AdminSettings: React.FC = () => {
   const { config, updateConfig, setThemePreset, resetDemoData, showToast } = useStore();
 
   const [storeName, setStoreName] = useState(config.storeName);
   const [storeTagline, setStoreTagline] = useState(config.storeTagline);
+  const [logoUrl, setLogoUrl] = useState(config.logoUrl || '/orlea-logo.svg');
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const [phone, setPhone] = useState(config.phone);
   const [whatsappNumber, setWhatsappNumber] = useState(config.whatsappNumber);
   const [instagramUrl, setInstagramUrl] = useState(config.instagramUrl);
@@ -61,6 +66,7 @@ export const AdminSettings: React.FC = () => {
     await updateConfig({
       storeName: storeName.trim(),
       storeTagline: storeTagline.trim(),
+      logoUrl: logoUrl.trim(),
       phone: phone.trim(),
       whatsappNumber: whatsappNumber.trim(),
       instagramUrl: instagramUrl.trim(),
@@ -184,6 +190,79 @@ export const AdminSettings: React.FC = () => {
               <p className="text-xs text-stone-500">
                 Nom commercial, slogan et messages d'annonce.
               </p>
+            </div>
+          </div>
+
+          {/* Logo Upload Section */}
+          <div className="p-4 bg-stone-50 rounded-2xl border border-stone-200/80 space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="block text-xs font-bold text-stone-700 uppercase tracking-wider">
+                Logo de la Boutique (Affiché dans la barre de navigation et le pied de page)
+              </label>
+              <span className="text-[10px] text-stone-400 font-mono">PNG, JPG, SVG, WebP</span>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-center gap-4">
+              {/* Logo Preview */}
+              <div className="relative group shrink-0">
+                <img
+                  src={logoUrl || '/orlea-logo.svg'}
+                  alt="Aperçu logo"
+                  className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl object-cover border-2 border-stone-300 shadow-sm bg-white"
+                  onError={e => {
+                    (e.currentTarget as HTMLImageElement).src = '/orlea-logo.svg';
+                  }}
+                />
+              </div>
+
+              {/* Upload Input & URL Input */}
+              <div className="flex-1 w-full space-y-2">
+                <div className="flex items-center gap-2">
+                  <label className="cursor-pointer px-4 py-2 bg-stone-900 hover:bg-stone-800 text-white rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all shadow-xs">
+                    <Upload className="w-3.5 h-3.5" />
+                    <span>{isUploadingLogo ? 'Compression...' : 'Téléverser un logo'}</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={async e => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          setIsUploadingLogo(true);
+                          try {
+                            const compressed = await compressImageFile(file, 600, 600, 0.9);
+                            setLogoUrl(compressed);
+                            showToast('Nouveau logo chargé ! N\'oubliez pas d\'enregistrer.', 'success');
+                          } catch (err) {
+                            showToast('Erreur de chargement du fichier', 'error');
+                          } finally {
+                            setIsUploadingLogo(false);
+                          }
+                        }
+                      }}
+                    />
+                  </label>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setLogoUrl('/orlea-logo.svg');
+                      showToast('Logo par défaut rétabli', 'info');
+                    }}
+                    className="px-3 py-2 text-stone-500 hover:text-stone-800 text-xs font-medium"
+                  >
+                    Réinitialiser
+                  </button>
+                </div>
+
+                <input
+                  type="text"
+                  placeholder="Ou collez une URL d'image web..."
+                  value={logoUrl}
+                  onChange={e => setLogoUrl(e.target.value)}
+                  className="w-full px-3 py-1.5 text-xs bg-white rounded-lg border border-stone-200 focus:outline-none focus:border-store-primary font-mono text-stone-600"
+                />
+              </div>
             </div>
           </div>
 

@@ -43,6 +43,8 @@ export const ProductPage: React.FC<ProductPageProps> = ({ productId }) => {
     setCurrentView,
     addReview,
     showToast,
+    addToCart,
+    setIsCartOpen,
   } = useStore();
 
   const product = products.find(p => p.id === productId) || products[0];
@@ -687,6 +689,38 @@ export const ProductPage: React.FC<ProductPageProps> = ({ productId }) => {
                     </div>
                   </div>
                 )}
+              </div>
+
+              {/* Action Buttons: Add to Cart + Direct Order */}
+              <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    addToCart({
+                      productId: product.id,
+                      productTitle: product.title,
+                      productImage: product.images[activeImageIndex] || product.images[0],
+                      selectedColor: selectedColor || '',
+                      selectedSize: selectedSize || '',
+                      quantity: 1,
+                      unitPrice: product.price,
+                      maxStock: product.totalStock || 50,
+                    });
+                    setIsCartOpen(true);
+                  }}
+                  className="flex-1 py-3 px-4 rounded-2xl bg-white hover:bg-stone-50 text-stone-900 border-2 border-stone-900 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 shadow-xs transition-all active:scale-95"
+                >
+                  <ShoppingBag className="w-4 h-4 text-store-primary" />
+                  <span>Ajouter au Panier</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={scrollToForm}
+                  className="flex-1 py-3 px-4 rounded-2xl bg-stone-900 hover:bg-stone-800 text-white text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 shadow-soft transition-all active:scale-95"
+                >
+                  <span>Commander Immédiatement</span>
+                </button>
               </div>
 
               {/* ================= SECTION 3 : DIRECT HIGH-CONVERTING COD ORDER FORM ================= */}

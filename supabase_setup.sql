@@ -63,3 +63,4 @@ CREATE POLICY "Allow update marketing_integrations"
   FOR ALL
   USING (true)
   WITH CHECK (true);
+

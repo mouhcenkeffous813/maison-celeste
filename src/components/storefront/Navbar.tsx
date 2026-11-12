@@ -4,7 +4,16 @@ import { useStore } from '../../context/StoreContext';
 import { NavigationDrawer } from './NavigationDrawer';
 
 export const Navbar: React.FC = () => {
-  const { config, currentView, setCurrentView, products, isAdminLoggedIn, demoLoginAdmin } = useStore();
+  const {
+    config,
+    currentView,
+    setCurrentView,
+    products,
+    isAdminLoggedIn,
+    demoLoginAdmin,
+    cartTotalCount,
+    setIsCartOpen,
+  } = useStore();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchVal, setSearchVal] = useState('');
@@ -85,6 +94,21 @@ export const Navbar: React.FC = () => {
               <Phone className="w-3.5 h-3.5" />
               <span className="hidden md:inline">WhatsApp</span>
             </a>
+
+            {/* Shopping Cart Button */}
+            <button
+              onClick={() => setIsCartOpen(true)}
+              className="relative p-2 sm:px-3.5 sm:py-2 rounded-full bg-white hover:bg-stone-100 text-stone-800 border border-stone-200 text-xs font-bold flex items-center gap-2 transition-all shadow-xs active:scale-95"
+              title="Voir mon panier"
+            >
+              <ShoppingBag className="w-4 h-4 text-store-primary" />
+              <span className="hidden sm:inline">Panier</span>
+              {cartTotalCount > 0 && (
+                <span className="w-5 h-5 rounded-full bg-store-primary text-white text-[11px] font-black font-mono flex items-center justify-center animate-bounce-short">
+                  {cartTotalCount}
+                </span>
+              )}
+            </button>
 
             {/* Bouton Accès Dashboard Gérant */}
             <button
