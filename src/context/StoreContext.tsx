@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, useMemo, useRef } from 'react';
 import confetti from 'canvas-confetti';
-import { Product, Order, Wilaya, StoreConfig, Review, OrderStatus, ThemePreset, CartItem } from '../types';
+import { Product, Order, Wilaya, StoreConfig, Review, OrderStatus, ThemePreset, CartItem, RecentlyAddedItem } from '../types';
 import { api } from '../services/api';
 import { DEFAULT_STORE_CONFIG, applyThemeVariables } from '../config/store.config';
 import { supabase, isSupabaseConfigured } from '../services/supabaseClient';
@@ -43,6 +43,8 @@ interface StoreContextType {
   clearCart: () => void;
   cartTotalCount: number;
   cartSubtotal: number;
+  addedItemNotification: RecentlyAddedItem | null;
+  dismissAddedNotification: () => void;
 
   // Actions
   refreshAll: () => Promise<void>;
@@ -167,6 +169,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return [];
   });
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [addedItemNotification, setAddedItemNotification] = useState<RecentlyAddedItem | null>(null);
+
+  const dismissAddedNotification = () => {
+    setAddedItemNotification(null);
+  };
 
   // Sync cart to localStorage
   useEffect(() => {
@@ -195,7 +202,15 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
       return [...prev, { ...item, id: cartItemId }];
     });
-    showToast(`${item.productTitle} ajouté au panier !`, 'success');
+    setAddedItemNotification({
+      id: cartItemId,
+      productTitle: item.productTitle,
+      productImage: item.productImage,
+      selectedColor: item.selectedColor,
+      selectedSize: item.selectedSize,
+      quantity: item.quantity,
+      unitPrice: item.unitPrice,
+    });
   };
 
   const removeFromCart = (cartItemId: string) => {
@@ -886,6 +901,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         incomingNewOrder,
         dismissIncomingOrder,
         playAttractiveOrderSound,
+        addedItemNotification,
+        dismissAddedNotification,
       }}
     >
       {children}

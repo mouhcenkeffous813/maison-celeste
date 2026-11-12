@@ -718,7 +718,6 @@ export const ProductPage: React.FC<ProductPageProps> = ({ productId }) => {
                       unitPrice: product.price,
                       maxStock: product.totalStock || 50,
                     });
-                    setIsCartOpen(true);
                   }}
                   className="flex-1 py-3 px-4 rounded-2xl bg-white hover:bg-stone-50 text-stone-900 border-2 border-stone-900 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 shadow-xs transition-all active:scale-95"
                 >

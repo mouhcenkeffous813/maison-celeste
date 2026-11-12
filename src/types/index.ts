@@ -68,6 +68,16 @@ export interface CartItem {
   maxStock: number;
 }
 
+export interface RecentlyAddedItem {
+  id: string;
+  productTitle: string;
+  productImage: string;
+  selectedColor?: string;
+  selectedSize?: string;
+  quantity: number;
+  unitPrice: number;
+}
+
 export interface Order {
   id: string;
   orderNumber: string;

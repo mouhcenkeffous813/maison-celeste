@@ -6,6 +6,7 @@ import {
   Plus,
   Minus,
   ArrowRight,
+  ArrowLeft,
   ShieldCheck,
   Truck,
   CheckCircle2,
@@ -442,6 +443,16 @@ export const CartDrawer: React.FC = () => {
                 <span>{isSubmitting ? 'Validation...' : 'Confirmer Ma Commande COD'}</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
+
+              {/* Bouton Secondaire : Continuer Mes Achats / Modifier Panier */}
+              <button
+                type="button"
+                onClick={() => setIsCheckingOut(false)}
+                className="w-full py-2.5 px-4 rounded-xl border border-stone-200 hover:border-stone-300 hover:bg-stone-50 text-stone-600 hover:text-stone-900 text-xs font-semibold tracking-wide transition-all flex items-center justify-center gap-1.5 mt-2"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                <span>← CONTINUER MES ACHATS / MODIFIER</span>
+              </button>
             </form>
           ) : (
             /* CART ITEMS LIST */
@@ -531,6 +542,7 @@ export const CartDrawer: React.FC = () => {
               </div>
             </div>
 
+            {/* Bouton Principal : Passer la Commande */}
             <button
               onClick={() => {
                 setIsCheckingOut(true);
@@ -541,10 +553,20 @@ export const CartDrawer: React.FC = () => {
                   currency: config.currency === 'DA' ? 'DZD' : config.currency,
                 });
               }}
-              className="w-full py-3.5 bg-stone-900 hover:bg-stone-800 text-white text-xs font-bold uppercase tracking-wider rounded-2xl shadow-soft transition-all flex items-center justify-center gap-2"
+              className="w-full py-3.5 bg-stone-900 hover:bg-stone-800 text-white text-xs font-bold uppercase tracking-wider rounded-2xl shadow-soft transition-all flex items-center justify-center gap-2 active:scale-[0.98]"
             >
               <span>Passer la commande ({cartTotalCount})</span>
               <ArrowRight className="w-4 h-4" />
+            </button>
+
+            {/* Bouton Secondaire : Continuer Mes Achats */}
+            <button
+              type="button"
+              onClick={() => setIsCartOpen(false)}
+              className="w-full py-2.5 px-4 rounded-xl border border-stone-200 hover:border-stone-300 hover:bg-white text-stone-600 hover:text-stone-900 text-xs font-bold tracking-wide uppercase transition-all flex items-center justify-center gap-1.5 active:scale-[0.98]"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>← CONTINUER MES ACHATS</span>
             </button>
           </div>
         )}

@@ -10,6 +10,7 @@ import { Footer } from './components/storefront/Footer';
 import { AdminLayout } from './components/admin/AdminLayout';
 import { CookieConsentBanner } from './components/storefront/CookieConsentBanner';
 import { CartDrawer } from './components/storefront/CartDrawer';
+import { CartNotification } from './components/storefront/CartNotification';
 import { trackingManager } from './services/trackingManager';
 
 const AppContent: React.FC = () => {
@@ -78,6 +79,7 @@ const AppContent: React.FC = () => {
       <Footer />
       <CookieConsentBanner />
       <CartDrawer />
+      <CartNotification />
     </div>
   );
 };

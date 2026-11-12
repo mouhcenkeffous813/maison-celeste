@@ -256,7 +256,6 @@ export const HomePage: React.FC = () => {
                               unitPrice: product.price,
                               maxStock: product.totalStock || 50,
                             });
-                            setIsCartOpen(true);
                           }}
                           className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl border border-stone-200 hover:border-stone-400 hover:bg-stone-50 text-stone-700 transition-all flex items-center justify-center shrink-0 active:scale-95"
                           title="Ajouter au panier"
