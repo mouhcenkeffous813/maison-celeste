@@ -4,6 +4,7 @@ import { Product, Order, Wilaya, StoreConfig, Review, OrderStatus, ThemePreset, 
 import { api } from '../services/api';
 import { DEFAULT_STORE_CONFIG, applyThemeVariables } from '../config/store.config';
 import { supabase, isSupabaseConfigured } from '../services/supabaseClient';
+import { NewOrderAlertModal } from '../components/admin/NewOrderAlertModal';
 
 export type CurrentView = 'home' | 'product' | 'tracking' | 'shipping' | 'contact' | 'admin';
 
@@ -79,6 +80,11 @@ interface StoreContextType {
   // Dark Mode
   isDarkMode: boolean;
   toggleDarkMode: () => void;
+
+  // Realtime Incoming Order Notification & Sound
+  incomingNewOrder: Order | null;
+  dismissIncomingOrder: () => void;
+  playAttractiveOrderSound: () => void;
 }
 
 const StoreContext = createContext<StoreContextType | undefined>(undefined);
@@ -207,28 +213,70 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const isFetchingRef = useRef(false);
   const [lastSyncTime, setLastSyncTime] = useState<Date | null>(() => new Date());
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
+  const [incomingNewOrder, setIncomingNewOrder] = useState<Order | null>(null);
   const previousOrdersCountRef = useRef<number | null>(null);
 
-  // Discrete merchant audio chime for new orders
-  const playOrderChime = () => {
+  // Attractive multi-layered "Cha-Ching" Cash Register & Royal Bell sound
+  const playAttractiveOrderSound = () => {
     try {
       const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
       if (!AudioCtx) return;
       const ctx = new AudioCtx();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
-      osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.15); // A5
-      gain.gain.setValueAtTime(0.12, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.35);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.35);
-    } catch {
-      // Audio autoplay policy may suppress in background without user gesture
+      if (ctx.state === 'suspended') {
+        ctx.resume();
+      }
+
+      const now = ctx.currentTime;
+      const masterGain = ctx.createGain();
+      masterGain.gain.setValueAtTime(0.35, now);
+      masterGain.connect(ctx.destination);
+
+      // 1. Ascending Cash Register Chime Arpeggio: C6 -> E6 -> G6 -> C7 -> E7 (Brilliant, golden, catchy)
+      const chimeNotes = [
+        { freq: 1046.50, delay: 0.00, dur: 0.22, vol: 0.25 }, // C6
+        { freq: 1318.51, delay: 0.08, dur: 0.25, vol: 0.28 }, // E6
+        { freq: 1567.98, delay: 0.16, dur: 0.30, vol: 0.30 }, // G6
+        { freq: 2093.00, delay: 0.24, dur: 0.60, vol: 0.35 }, // C7
+        { freq: 2637.02, delay: 0.32, dur: 0.85, vol: 0.38 }, // E7 (Glory sparkle)
+      ];
+
+      chimeNotes.forEach(note => {
+        const osc = ctx.createOscillator();
+        const noteGain = ctx.createGain();
+        osc.type = 'triangle'; // Pure, sparkling bell-like quality
+        osc.frequency.setValueAtTime(note.freq, now + note.delay);
+
+        noteGain.gain.setValueAtTime(0.001, now + note.delay);
+        noteGain.gain.exponentialRampToValueAtTime(note.vol, now + note.delay + 0.02);
+        noteGain.gain.exponentialRampToValueAtTime(0.001, now + note.delay + note.dur);
+
+        osc.connect(noteGain);
+        noteGain.connect(masterGain);
+
+        osc.start(now + note.delay);
+        osc.stop(now + note.delay + note.dur);
+      });
+
+      // 2. High-pitch Coin Shimmer (Cash Register metal ping)
+      const coin = ctx.createOscillator();
+      const coinGain = ctx.createGain();
+      coin.type = 'sine';
+      coin.frequency.setValueAtTime(3135.96, now + 0.34); // G7
+      coinGain.gain.setValueAtTime(0.001, now + 0.34);
+      coinGain.gain.exponentialRampToValueAtTime(0.25, now + 0.36);
+      coinGain.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
+      coin.connect(coinGain);
+      coinGain.connect(masterGain);
+      coin.start(now + 0.34);
+      coin.stop(now + 1.2);
+
+    } catch (e) {
+      console.warn('Audio notification policy warning:', e);
     }
+  };
+
+  const dismissIncomingOrder = () => {
+    setIncomingNewOrder(null);
   };
 
   const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
@@ -399,18 +447,42 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // Audio alert and notification when a new order appears in admin view
   useEffect(() => {
     if (orders.length > 0) {
-      if (previousOrdersCountRef.current !== null && orders.length > previousOrdersCountRef.current && isAdminLoggedIn) {
+      if (
+        previousOrdersCountRef.current !== null &&
+        orders.length > previousOrdersCountRef.current &&
+        (isAdminLoggedIn || currentView === 'admin')
+      ) {
         const diff = orders.length - previousOrdersCountRef.current;
         const newest = orders[0];
-        playOrderChime();
+
+        // Play glorious catchy cash-register chime
+        playAttractiveOrderSound();
+
+        // Pop up celebratory alert modal
+        if (newest) {
+          setIncomingNewOrder(newest);
+        }
+
+        // System notification if permission granted
+        try {
+          if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+            new Notification(`Maison Céleste • Nouvelle commande !`, {
+              body: `${newest?.customerName || 'Client'} (${newest?.wilayaName || ''}) vient de commander pour ${newest?.grandTotal || 0} DA`,
+              icon: '/orlea-logo.svg',
+            });
+          }
+        } catch {
+          // ignore
+        }
+
         showToast(
-          `🔔 ${diff > 1 ? `${diff} nouvelles commandes reçues !` : `Nouvelle commande reçue : ${newest.orderNumber} (${newest.customerName})`}`,
+          `🎉 ${diff > 1 ? `${diff} nouvelles commandes reçues !` : `Nouvelle commande : ${newest.orderNumber} (${newest.customerName} - ${newest.grandTotal} DA)`}`,
           'success'
         );
       }
       previousOrdersCountRef.current = orders.length;
     }
-  }, [orders, isAdminLoggedIn]);
+  }, [orders, isAdminLoggedIn, currentView]);
 
   useEffect(() => {
     // Premier chargement initial
@@ -776,9 +848,20 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         simulateDemoOrder,
         isDarkMode,
         toggleDarkMode,
+        incomingNewOrder,
+        dismissIncomingOrder,
+        playAttractiveOrderSound,
       }}
     >
       {children}
+
+      {/* Prominent Celebratory New Order Alert Banner with Sound */}
+      <NewOrderAlertModal
+        order={incomingNewOrder}
+        onClose={dismissIncomingOrder}
+        currency={config.currency}
+        generateWhatsAppLink={generateWhatsAppLink}
+      />
 
       {/* Floating Toast notifications */}
       <div className="fixed top-4 right-4 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none px-4">

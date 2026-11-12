@@ -26,7 +26,9 @@ import {
   CalendarDays,
   XCircle,
   RefreshCw,
-  Wifi
+  Wifi,
+  Volume2,
+  Bell
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { formatPrice, searchMatches, normalizeString } from '../../utils/formatters';
@@ -48,6 +50,8 @@ export const AdminOverview: React.FC<{ onNavigateToOrders: () => void }> = ({ on
     refreshOrders,
     lastSyncTime,
     isSyncing,
+    playAttractiveOrderSound,
+    simulateDemoOrder,
   } = useStore();
 
   // Search & Filter State
@@ -281,15 +285,31 @@ export const AdminOverview: React.FC<{ onNavigateToOrders: () => void }> = ({ on
           </div>
         </div>
 
-        <button
-          onClick={() => refreshOrders()}
-          disabled={isSyncing}
-          className="flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-white/10 hover:bg-white/20 active:scale-95 text-white text-xs font-bold transition-all border border-white/10 disabled:opacity-50"
-          title="Actualiser les commandes depuis Supabase"
-        >
-          <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin text-amber-300' : ''}`} />
-          <span>{isSyncing ? 'Actualisation...' : 'Actualiser les commandes'}</span>
-        </button>
+        <div className="flex items-center gap-2">
+          {/* Test Sound Button */}
+          <button
+            onClick={() => {
+              playAttractiveOrderSound();
+              showToast('🔔 Son de notification déclenché !', 'info');
+            }}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-amber-500/20 hover:bg-amber-500/30 active:scale-95 text-amber-300 text-xs font-bold transition-all border border-amber-500/30"
+            title="Tester le son d'alerte de commande"
+          >
+            <Volume2 className="w-3.5 h-3.5" />
+            <span>Tester Son 🔔</span>
+          </button>
+
+          {/* Manual Refresh Button */}
+          <button
+            onClick={() => refreshOrders()}
+            disabled={isSyncing}
+            className="flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-white/10 hover:bg-white/20 active:scale-95 text-white text-xs font-bold transition-all border border-white/10 disabled:opacity-50"
+            title="Actualiser les commandes depuis Supabase"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin text-amber-300' : ''}`} />
+            <span>{isSyncing ? 'Actualisation...' : 'Actualiser'}</span>
+          </button>
+        </div>
       </div>
 
       {/* ================= SEARCH & INTERACTIVE FILTERS BAR ================= */}
