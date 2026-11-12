@@ -3,6 +3,7 @@ import confetti from 'canvas-confetti';
 import { Product, Order, Wilaya, StoreConfig, Review, OrderStatus, ThemePreset, CartItem } from '../types';
 import { api } from '../services/api';
 import { DEFAULT_STORE_CONFIG, applyThemeVariables } from '../config/store.config';
+import { supabase, isSupabaseConfigured } from '../services/supabaseClient';
 
 export type CurrentView = 'home' | 'product' | 'tracking' | 'shipping' | 'contact' | 'admin';
 
@@ -44,6 +45,9 @@ interface StoreContextType {
 
   // Actions
   refreshAll: () => Promise<void>;
+  refreshOrders: () => Promise<void>;
+  lastSyncTime: Date | null;
+  isSyncing: boolean;
   createOrder: (orderData: Omit<Order, 'id' | 'orderNumber' | 'createdAt' | 'updatedAt'>) => Promise<Order>;
   updateOrderStatus: (orderId: string, status: OrderStatus, notes?: string) => Promise<Order>;
   updateProduct: (id: string, updates: Partial<Product>) => Promise<Product>;
@@ -171,6 +175,31 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const isFetchingRef = useRef(false);
+  const [lastSyncTime, setLastSyncTime] = useState<Date | null>(() => new Date());
+  const [isSyncing, setIsSyncing] = useState<boolean>(false);
+  const previousOrdersCountRef = useRef<number | null>(null);
+
+  // Discrete merchant audio chime for new orders
+  const playOrderChime = () => {
+    try {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
+      osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.15); // A5
+      gain.gain.setValueAtTime(0.12, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.35);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.35);
+    } catch {
+      // Audio autoplay policy may suppress in background without user gesture
+    }
+  };
 
   const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
     const id = Math.random().toString(36).substring(2, 9);
@@ -205,6 +234,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         idx === arr.findIndex(o => o.id === ord.id || (o.orderNumber && o.orderNumber === ord.orderNumber))
       );
       setOrders(uniqueOrders);
+      setLastSyncTime(new Date());
 
       setWilayas(wils);
       setConfig(cfg);
@@ -222,6 +252,93 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       isFetchingRef.current = false;
     }
   };
+
+  // Dedicated lightweight fast order refresh (from Supabase Cloud)
+  const refreshOrders = async () => {
+    try {
+      setIsSyncing(true);
+      const ords = await api.getOrders();
+      const uniqueOrders = ords.filter((ord, idx, arr) =>
+        idx === arr.findIndex(o => o.id === ord.id || (o.orderNumber && o.orderNumber === ord.orderNumber))
+      );
+      setOrders(uniqueOrders);
+      setLastSyncTime(new Date());
+      showToast(`Commandes synchronisées (${uniqueOrders.length} trouvées)`, 'success');
+    } catch (err) {
+      console.error('Error refreshing orders:', err);
+      showToast('Échec de la synchronisation des commandes', 'error');
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  // Realtime Supabase Channel: auto-update when new order arrives from any client
+  useEffect(() => {
+    if (!supabase || !isSupabaseConfigured) return;
+
+    let channel: any = null;
+    try {
+      channel = supabase
+        .channel('public:orders-realtime-sync')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'orders' },
+          (payload) => {
+            console.log('[Supabase Realtime] Changement détecté sur les commandes:', payload);
+            loadData(true);
+          }
+        )
+        .subscribe((status) => {
+          console.log('[Supabase Realtime] Statut abonnement commandes:', status);
+        });
+    } catch (err) {
+      console.warn('[Supabase Realtime] Erreur abonnement:', err);
+    }
+
+    return () => {
+      if (channel && supabase) {
+        supabase.removeChannel(channel);
+      }
+    };
+  }, []);
+
+  // Cross-Tab local synchronization
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'celeste_orders_v10' || e.key === 'celeste_config_v10' || e.key === 'celeste_products_v11') {
+        loadData(true);
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
+  // Safety periodic auto-polling when admin is logged in (every 15s)
+  useEffect(() => {
+    if (!isAdminLoggedIn) return;
+
+    const interval = setInterval(() => {
+      loadData(true);
+    }, 15000);
+
+    return () => clearInterval(interval);
+  }, [isAdminLoggedIn]);
+
+  // Audio alert and notification when a new order appears in admin view
+  useEffect(() => {
+    if (orders.length > 0) {
+      if (previousOrdersCountRef.current !== null && orders.length > previousOrdersCountRef.current && isAdminLoggedIn) {
+        const diff = orders.length - previousOrdersCountRef.current;
+        const newest = orders[0];
+        playOrderChime();
+        showToast(
+          `🔔 ${diff > 1 ? `${diff} nouvelles commandes reçues !` : `Nouvelle commande reçue : ${newest.orderNumber} (${newest.customerName})`}`,
+          'success'
+        );
+      }
+      previousOrdersCountRef.current = orders.length;
+    }
+  }, [orders, isAdminLoggedIn]);
 
   useEffect(() => {
     // Premier chargement initial
@@ -559,6 +676,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
         isLoading,
         refreshAll: () => loadData(true),
+        refreshOrders,
+        lastSyncTime,
+        isSyncing,
         createOrder,
         updateOrderStatus,
         updateProduct,

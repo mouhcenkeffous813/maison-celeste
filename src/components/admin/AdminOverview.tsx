@@ -24,7 +24,9 @@ import {
   Award,
   Eye,
   CalendarDays,
-  XCircle
+  XCircle,
+  RefreshCw,
+  Wifi
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { formatPrice, searchMatches, normalizeString } from '../../utils/formatters';
@@ -35,7 +37,18 @@ import { OrderDetailsModal } from './OrderDetailsModal';
 export type DateFilterPreset = 'all' | 'today' | 'yesterday' | '7days' | '30days' | 'this_month' | 'last_month' | 'custom';
 
 export const AdminOverview: React.FC<{ onNavigateToOrders: () => void }> = ({ onNavigateToOrders }) => {
-  const { orders, products, wilayas, config, updateOrderStatus, generateWhatsAppLink, showToast } = useStore();
+  const {
+    orders,
+    products,
+    wilayas,
+    config,
+    updateOrderStatus,
+    generateWhatsAppLink,
+    showToast,
+    refreshOrders,
+    lastSyncTime,
+    isSyncing,
+  } = useStore();
 
   // Search & Filter State
   const [search, setSearch] = useState('');
@@ -47,22 +60,30 @@ export const AdminOverview: React.FC<{ onNavigateToOrders: () => void }> = ({ on
   const [selectedOrderForPrint, setSelectedOrderForPrint] = useState<Order | null>(null);
   const [selectedOrderDetails, setSelectedOrderDetails] = useState<Order | null>(null);
 
+  // Helper to get local date as YYYY-MM-DD
+  const getLocalDateStr = (d: Date) => {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   // Filter orders by Date range, Status, and accent-insensitive Search query
   const filteredOrders = useMemo(() => {
     const now = new Date();
-    const todayStr = now.toISOString().split('T')[0];
+    const todayStr = getLocalDateStr(now);
 
     const yesterday = new Date(now);
     yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayStr = yesterday.toISOString().split('T')[0];
+    const yesterdayStr = getLocalDateStr(yesterday);
 
     const sevenDaysAgo = new Date(now);
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-    const sevenDaysStr = sevenDaysAgo.toISOString().split('T')[0];
+    const sevenDaysStr = getLocalDateStr(sevenDaysAgo);
 
     const thirtyDaysAgo = new Date(now);
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    const thirtyDaysStr = thirtyDaysAgo.toISOString().split('T')[0];
+    const thirtyDaysStr = getLocalDateStr(thirtyDaysAgo);
 
     const thisMonthPrefix = todayStr.substring(0, 7);
 
@@ -70,9 +91,10 @@ export const AdminOverview: React.FC<{ onNavigateToOrders: () => void }> = ({ on
     const prevMonthPrefix = `${prevMonth.getFullYear()}-${String(prevMonth.getMonth() + 1).padStart(2, '0')}`;
 
     return orders.filter(order => {
-      // 1. Date filter
+      // 1. Date filter (converted to local date)
       if (dateFilter !== 'all') {
-        const orderDateStr = order.createdAt.split('T')[0];
+        const orderDate = new Date(order.createdAt);
+        const orderDateStr = !isNaN(orderDate.getTime()) ? getLocalDateStr(orderDate) : order.createdAt.split('T')[0];
 
         if (dateFilter === 'today') {
           if (orderDateStr !== todayStr) return false;
@@ -235,6 +257,41 @@ export const AdminOverview: React.FC<{ onNavigateToOrders: () => void }> = ({ on
   return (
     <div className="space-y-6">
       
+      {/* ================= LIVE SUPABASE REALTIME SYNC BANNER ================= */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-gradient-to-r from-stone-900 via-stone-850 to-stone-900 text-white px-5 py-3.5 rounded-3xl shadow-sm border border-stone-800">
+        <div className="flex items-center gap-3">
+          <span className="relative flex h-3 w-3">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+          </span>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold tracking-wide">Synchronisation Cloud Supabase</span>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                ● En Direct
+              </span>
+            </div>
+            <p className="text-[11px] text-stone-300">
+              {lastSyncTime
+                ? `Dernière synchro à ${lastSyncTime.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`
+                : 'En attente de synchronisation...'}
+              {' • '}
+              <span className="text-amber-300 font-semibold">{orders.length} commande{orders.length > 1 ? 's' : ''} au total</span>
+            </p>
+          </div>
+        </div>
+
+        <button
+          onClick={() => refreshOrders()}
+          disabled={isSyncing}
+          className="flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-white/10 hover:bg-white/20 active:scale-95 text-white text-xs font-bold transition-all border border-white/10 disabled:opacity-50"
+          title="Actualiser les commandes depuis Supabase"
+        >
+          <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin text-amber-300' : ''}`} />
+          <span>{isSyncing ? 'Actualisation...' : 'Actualiser les commandes'}</span>
+        </button>
+      </div>
+
       {/* ================= SEARCH & INTERACTIVE FILTERS BAR ================= */}
       <div className="bg-white rounded-3xl border border-store-border p-4 sm:p-5 shadow-card space-y-3">
         <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">

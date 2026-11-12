@@ -14,7 +14,8 @@ import {
   Filter,
   Eye,
   Trash2,
-  Printer
+  Printer,
+  RefreshCw
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { Order, OrderStatus } from '../../types';
@@ -30,6 +31,9 @@ export const AdminOrders: React.FC = () => {
     generateWhatsAppLink,
     exportOrdersToCsv,
     showToast,
+    refreshOrders,
+    lastSyncTime,
+    isSyncing,
   } = useStore();
 
   const [activeFilter, setActiveFilter] = useState<string>('all');
@@ -77,14 +81,27 @@ export const AdminOrders: React.FC = () => {
           </p>
         </div>
 
-        {/* CSV Export Button */}
-        <button
-          onClick={exportOrdersToCsv}
-          className="px-4 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-2xl text-xs font-bold flex items-center justify-center gap-2 shadow-sm transition-all"
-        >
-          <Download className="w-4 h-4" />
-          <span>Exporter CSV (Yalidine / ZR Express)</span>
-        </button>
+        {/* Actions Bar: Refresh + CSV */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => refreshOrders()}
+            disabled={isSyncing}
+            className="px-3.5 py-2.5 bg-white hover:bg-stone-50 active:scale-95 text-stone-700 border border-store-border rounded-2xl text-xs font-bold flex items-center justify-center gap-2 shadow-xs transition-all disabled:opacity-50"
+            title="Recharger depuis Supabase"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin text-store-primary' : 'text-stone-500'}`} />
+            <span>{isSyncing ? 'Actualisation...' : 'Actualiser'}</span>
+          </button>
+
+          {/* CSV Export Button */}
+          <button
+            onClick={exportOrdersToCsv}
+            className="px-4 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-2xl text-xs font-bold flex items-center justify-center gap-2 shadow-sm transition-all"
+          >
+            <Download className="w-4 h-4" />
+            <span>Exporter CSV (Yalidine / ZR Express)</span>
+          </button>
+        </div>
       </div>
 
       {/* Filter Tabs */}
