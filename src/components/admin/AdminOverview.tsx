@@ -137,9 +137,9 @@ export const AdminOverview: React.FC<{ onNavigateToOrders: () => void }> = ({ on
   const deliveredOrders = filteredOrders.filter(o => o.status === 'delivered');
   const validOrdersCount = filteredOrders.filter(o => o.status !== 'cancelled').length;
   
-  const deliveryRate = validOrdersCount > 0
-    ? Math.round((deliveredOrders.length / validOrdersCount) * 100)
-    : 85;
+  const deliveryRate = filteredOrders.length > 0
+    ? Math.round((deliveredOrders.length / filteredOrders.length) * 100)
+    : 0;
 
   const averageOrderValue = validOrdersCount > 0
     ? Math.round(totalRevenue / validOrdersCount)
@@ -450,7 +450,9 @@ export const AdminOverview: React.FC<{ onNavigateToOrders: () => void }> = ({ on
             <p className="font-serif text-lg sm:text-xl font-black text-stone-900 font-mono">
               {deliveryRate}%
             </p>
-            <p className="text-[10px] text-purple-600 font-medium mt-0.5">Colis livrés / payés</p>
+            <p className="text-[10px] text-purple-600 font-medium mt-0.5">
+              Colis livrés / payés ({deliveredOrders.length}/{filteredOrders.length})
+            </p>
           </div>
         </div>
 
