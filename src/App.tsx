@@ -62,7 +62,7 @@ const AppContent: React.FC = () => {
 
   // Storefront Views
   return (
-    <div className="min-h-screen flex flex-col bg-store-base text-store-text">
+    <div className="min-h-screen flex flex-col bg-store-base text-store-text overflow-x-hidden w-full max-w-full">
       <Navbar />
 
       <main className="flex-1">

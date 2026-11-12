@@ -11,7 +11,8 @@ import {
   ArrowRight,
   ExternalLink,
   Sparkles,
-  Lock
+  Lock,
+  LayoutDashboard
 } from 'lucide-react';
 import { useStore, CurrentView } from '../../context/StoreContext';
 import { searchMatches } from '../../utils/formatters';
@@ -23,7 +24,7 @@ interface NavigationDrawerProps {
 }
 
 export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({ isOpen, onClose }) => {
-  const { config, products, setCurrentView, setSelectedCategory, openProductPage, isAdminLoggedIn, categories } = useStore();
+  const { config, products, setCurrentView, setSelectedCategory, openProductPage, isAdminLoggedIn, demoLoginAdmin, categories } = useStore();
   const [searchQuery, setSearchQuery] = useState('');
 
   if (!isOpen) return null;
@@ -239,23 +240,24 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({ isOpen, onCl
             </div>
           </div>
 
-          {/* White-Label Admin Gate: Visible ONLY if the merchant is ALREADY logged in */}
-          {isAdminLoggedIn && (
-            <div className="pt-2 border-t border-store-border">
-              <button
-                onClick={() => handleNav('admin')}
-                className="w-full p-2.5 rounded-xl bg-stone-900 text-white text-xs font-medium flex items-center justify-between hover:bg-stone-800 transition-colors shadow-sm"
-              >
-                <div className="flex items-center gap-2">
-                  <Lock className="w-3.5 h-3.5 text-store-primary" />
-                  <span>Retour Dashboard Admin</span>
-                </div>
-                <span className="text-[10px] bg-stone-800 px-1.5 py-0.5 rounded text-stone-300">
-                  Connecté
-                </span>
-              </button>
-            </div>
-          )}
+          {/* Admin Dashboard Access */}
+          <div className="pt-2 border-t border-store-border">
+            <button
+              onClick={() => {
+                demoLoginAdmin();
+                onClose();
+              }}
+              className="w-full p-2.5 rounded-xl bg-stone-900 text-white text-xs font-semibold flex items-center justify-between hover:bg-stone-800 transition-colors shadow-sm"
+            >
+              <div className="flex items-center gap-2">
+                <LayoutDashboard className="w-4 h-4 text-store-primary" />
+                <span>Dashboard Gérant</span>
+              </div>
+              <span className="text-[10px] bg-stone-800 px-2 py-0.5 rounded text-stone-300 font-mono">
+                {isAdminLoggedIn ? 'Connecté' : 'Accès PIN'}
+              </span>
+            </button>
+          </div>
         </div>
 
         {/* Footer info */}

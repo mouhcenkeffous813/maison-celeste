@@ -153,8 +153,8 @@ export const Footer: React.FC = () => {
             Tous les droits sont réservés © {new Date().getFullYear()} {config.storeName}
           </p>
 
-          {/* Only shown if the merchant is ALREADY authenticated */}
-          {isAdminLoggedIn && (
+          {/* Admin link: explicit and accessible */}
+          {isAdminLoggedIn ? (
             <button
               onClick={() => {
                 setCurrentView('admin');
@@ -164,6 +164,18 @@ export const Footer: React.FC = () => {
             >
               <Lock className="w-3 h-3 text-store-primary" />
               <span>Tableau de Bord Gérant</span>
+            </button>
+          ) : (
+            <button
+              onClick={() => {
+                setCurrentView('admin');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              className="text-[10px] text-stone-600 hover:text-stone-400 flex items-center gap-1 transition-colors"
+              title="Accès Administrateur"
+            >
+              <Lock className="w-2.5 h-2.5 text-stone-600" />
+              <span>Espace Gérant</span>
             </button>
           )}
         </div>

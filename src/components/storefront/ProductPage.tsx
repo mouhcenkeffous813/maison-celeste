@@ -1081,7 +1081,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({ productId }) => {
 
                         <button
                           type="button"
-                          className="w-full py-1.5 rounded-lg border border-rose-200 text-rose-500 bg-rose-50/40 text-[11px] font-bold tracking-wider uppercase hover:bg-rose-100 transition-colors"
+                          className="w-full py-1.5 px-1 rounded-lg border border-rose-200 text-rose-500 bg-rose-50/40 text-[10px] sm:text-[11px] font-bold tracking-tight sm:tracking-wider uppercase hover:bg-rose-100 transition-colors truncate"
                         >
                           COMMANDER
                         </button>
@@ -1202,12 +1202,12 @@ export const ProductPage: React.FC<ProductPageProps> = ({ productId }) => {
             {/* Quick Commander Button matching Screenshot 3 */}
             <button
               onClick={scrollToForm}
-              className="flex-1 py-2.5 px-4 rounded-xl bg-rose-500 text-white font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2.5 shadow-md hover:bg-rose-600 active:scale-[0.98]"
+              className="flex-1 min-w-0 py-2.5 px-2 sm:px-4 rounded-xl bg-rose-500 text-white font-bold text-[10px] sm:text-xs uppercase tracking-tight sm:tracking-wider flex items-center justify-center gap-1.5 sm:gap-2.5 shadow-md hover:bg-rose-600 active:scale-[0.98] overflow-hidden"
             >
-              <span className="bg-white/25 px-2 py-0.5 rounded text-[11px] font-mono font-bold">
+              <span className="bg-white/25 px-1.5 sm:px-2 py-0.5 rounded text-[10px] sm:text-[11px] font-mono font-bold shrink-0">
                 {formatPrice(grandTotal, config.currency)}
               </span>
-              <span>COMMANDER</span>
+              <span className="truncate">COMMANDER</span>
             </button>
           </div>
         </div>
