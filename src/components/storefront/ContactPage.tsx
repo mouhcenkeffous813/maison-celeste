@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { Phone, MessageCircle, Mail, MapPin, Clock, Send, CheckCircle2, Instagram, Facebook } from 'lucide-react';
+import { Phone, MessageCircle, Mail, MapPin, Clock, Send, CheckCircle2, Instagram, Facebook, ArrowLeft } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 
 export const ContactPage: React.FC = () => {
-  const { config, showToast } = useStore();
+  const { config, setCurrentView, showToast } = useStore();
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [message, setMessage] = useState('');
@@ -21,6 +21,17 @@ export const ContactPage: React.FC = () => {
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8 sm:py-12">
+      {/* Back to Home Button */}
+      <div className="mb-6">
+        <button
+          onClick={() => setCurrentView('home')}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-white border border-stone-200 text-stone-700 hover:text-stone-900 hover:bg-stone-50 text-xs font-bold shadow-xs transition-all active:scale-95"
+        >
+          <ArrowLeft className="w-4 h-4 text-store-primary" />
+          <span>← Retour à la boutique</span>
+        </button>
+      </div>
+
       <div className="text-center max-w-lg mx-auto mb-10">
         <div className="w-12 h-12 rounded-2xl bg-store-secondary text-store-primary flex items-center justify-center mx-auto mb-3 shadow-xs">
           <MessageCircle className="w-6 h-6" />

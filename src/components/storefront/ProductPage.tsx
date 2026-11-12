@@ -20,7 +20,8 @@ import {
   Plus,
   Minus,
   Share2,
-  Clock
+  Clock,
+  ArrowLeft
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { useStore } from '../../context/StoreContext';
@@ -169,7 +170,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({ productId }) => {
 
   // Real-time Pricing Calculations
   const productSubtotal = product.price * quantity;
-  const isFreeShipping = productSubtotal >= config.freeShippingThreshold;
+  const isFreeShipping = Boolean(config.freeShippingEnabled) && config.freeShippingThreshold > 0 && productSubtotal >= config.freeShippingThreshold;
   
   const shippingFee = useMemo(() => {
     if (!currentWilaya) return 0;
@@ -437,6 +438,17 @@ export const ProductPage: React.FC<ProductPageProps> = ({ productId }) => {
       ) : (
         /* Standard Product Page View */
         <div className="max-w-6xl mx-auto px-4 mt-2">
+          {/* Back to Home Button */}
+          <div className="mb-4">
+            <button
+              onClick={() => setCurrentView('home')}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-white hover:bg-stone-50 text-stone-700 hover:text-stone-900 border border-stone-200 text-xs font-bold shadow-xs transition-all active:scale-95"
+            >
+              <ArrowLeft className="w-4 h-4 text-store-primary" />
+              <span>← Retour à la boutique</span>
+            </button>
+          </div>
+
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
             
             {/* LEFT / TOP: Image Gallery (5 cols desktop) */}

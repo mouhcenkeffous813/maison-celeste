@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Menu, Search, Phone, ShoppingBag, ShieldCheck, Sparkles, Settings, Lock, LayoutDashboard } from 'lucide-react';
+import { Menu, Search, Phone, ShoppingBag, ShieldCheck, Sparkles, Settings, Lock, LayoutDashboard, Sun, Moon } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { NavigationDrawer } from './NavigationDrawer';
 
@@ -13,6 +13,8 @@ export const Navbar: React.FC = () => {
     demoLoginAdmin,
     cartTotalCount,
     setIsCartOpen,
+    isDarkMode,
+    toggleDarkMode,
   } = useStore();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -83,6 +85,16 @@ export const Navbar: React.FC = () => {
 
           {/* Right: Actions */}
           <div className="flex items-center gap-1.5 sm:gap-2">
+            {/* Dark Mode Toggle */}
+            <button
+              onClick={toggleDarkMode}
+              className="p-2 sm:p-2.5 rounded-full bg-stone-100 hover:bg-stone-200 text-stone-700 transition-all active:scale-90 border border-stone-200"
+              title={isDarkMode ? 'Passer au mode clair' : 'Passer au mode sombre'}
+              aria-label="Basculer le mode sombre"
+            >
+              {isDarkMode ? <Sun className="w-4 h-4 text-amber-500" /> : <Moon className="w-4 h-4 text-stone-600" />}
+            </button>
+
             {/* Quick WhatsApp / Call */}
             <a
               href={`https://wa.me/${config.whatsappNumber.replace(/\D/g, '')}?text=${encodeURIComponent('Bonjour, j\'ai une question sur vos produits.')}`}

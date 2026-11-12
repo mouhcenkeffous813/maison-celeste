@@ -64,6 +64,7 @@ export const DEFAULT_STORE_CONFIG: StoreConfig = {
   facebookUrl: 'https://facebook.com/maisonceleste.dz',
   tiktokUrl: 'https://tiktok.com/@maisonceleste.dz',
   freeShippingThreshold: 10000,
+  freeShippingEnabled: false,
   theme: THEME_PRESETS[0],
   metaPixelId: '',
   tiktokPixelId: '',

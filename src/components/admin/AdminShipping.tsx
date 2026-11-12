@@ -8,7 +8,10 @@ export const AdminShipping: React.FC = () => {
   const { wilayas, config, updateWilaya, updateConfig, showToast } = useStore();
   const [search, setSearch] = useState('');
   const [freeShippingThreshold, setFreeShippingThreshold] = useState<number>(
-    config.freeShippingThreshold
+    config.freeShippingThreshold || 10000
+  );
+  const [freeShippingEnabled, setFreeShippingEnabled] = useState<boolean>(
+    config.freeShippingEnabled ?? false
   );
 
   // Local state for inline edits
@@ -45,7 +48,13 @@ export const AdminShipping: React.FC = () => {
   };
 
   const handleSaveThreshold = async () => {
-    await updateConfig({ freeShippingThreshold });
+    await updateConfig({ freeShippingThreshold, freeShippingEnabled });
+    showToast(
+      freeShippingEnabled
+        ? `Livraison gratuite activée dès ${freeShippingThreshold} DA !`
+        : 'Livraison gratuite désactivée (frais toujours facturés)',
+      'success'
+    );
   };
 
   const filteredWilayas = wilayas.filter(
@@ -69,35 +78,68 @@ export const AdminShipping: React.FC = () => {
         </div>
       </div>
 
-      {/* Global Free Shipping Card */}
-      <div className="bg-gradient-to-r from-stone-900 to-stone-800 text-white rounded-3xl p-5 sm:p-6 shadow-luxury flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center text-store-primary flex-shrink-0">
+      {/* Global Free Shipping Card with Activate / Deactivate Toggle */}
+      <div className="bg-gradient-to-r from-stone-900 to-stone-800 text-white rounded-3xl p-5 sm:p-6 shadow-luxury flex flex-col md:flex-row items-start md:items-center justify-between gap-5 border border-stone-800">
+        <div className="flex items-center gap-3.5">
+          <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center text-amber-300 flex-shrink-0">
             <Sparkles className="w-6 h-6" />
           </div>
           <div>
-            <h3 className="font-serif text-base font-bold">
-              Seuil de Livraison Gratuite Globale
-            </h3>
-            <p className="text-xs text-stone-300">
-              Offrez les frais de port aux clientes dès un certain montant de panier pour doper le panier moyen.
+            <div className="flex items-center gap-2">
+              <h3 className="font-serif text-base font-bold">
+                Seuil de Livraison Gratuite Globale
+              </h3>
+              <span
+                className={`px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase border ${
+                  freeShippingEnabled
+                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                    : 'bg-stone-700/60 text-stone-400 border-stone-600'
+                }`}
+              >
+                {freeShippingEnabled ? '● Activé' : '○ Désactivé'}
+              </span>
+            </div>
+            <p className="text-xs text-stone-300 mt-0.5">
+              {freeShippingEnabled
+                ? 'Les frais de port sont offerts dès que le panier atteint le seuil ci-contre.'
+                : 'La livraison gratuite est désactivée. Les frais de port de chaque Wilaya sont toujours facturés.'}
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <input
-            type="number"
-            step={500}
-            min={0}
-            value={freeShippingThreshold}
-            onChange={e => setFreeShippingThreshold(Number(e.target.value))}
-            className="w-32 px-3 py-2 bg-stone-800 border border-stone-700 rounded-xl text-white font-mono text-sm font-bold text-center focus:outline-none focus:border-store-primary"
-          />
-          <span className="text-xs font-bold text-stone-300">DA</span>
+        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+          {/* Toggle Switch */}
+          <button
+            type="button"
+            onClick={() => setFreeShippingEnabled(!freeShippingEnabled)}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
+              freeShippingEnabled ? 'bg-emerald-500' : 'bg-stone-700'
+            }`}
+          >
+            <span
+              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                freeShippingEnabled ? 'translate-x-6' : 'translate-x-1'
+              }`}
+            />
+          </button>
+
+          {/* Amount input */}
+          <div className={`flex items-center gap-1.5 ${!freeShippingEnabled ? 'opacity-40 pointer-events-none' : ''}`}>
+            <input
+              type="number"
+              step={500}
+              min={0}
+              disabled={!freeShippingEnabled}
+              value={freeShippingThreshold}
+              onChange={e => setFreeShippingThreshold(Number(e.target.value))}
+              className="w-28 px-3 py-2 bg-stone-800 border border-stone-700 rounded-xl text-white font-mono text-sm font-bold text-center focus:outline-none focus:border-store-primary"
+            />
+            <span className="text-xs font-bold text-stone-300">DA</span>
+          </div>
+
           <button
             onClick={handleSaveThreshold}
-            className="px-4 py-2 bg-store-primary hover:bg-store-primary-hover text-white rounded-xl text-xs font-bold shadow-soft transition-colors"
+            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white rounded-xl text-xs font-bold shadow-soft transition-all"
           >
             Sauvegarder
           </button>

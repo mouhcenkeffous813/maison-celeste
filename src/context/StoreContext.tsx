@@ -75,6 +75,10 @@ interface StoreContextType {
   logoutAdmin: () => void;
   demoLoginAdmin: () => void;
   simulateDemoOrder: () => Promise<Order>;
+
+  // Dark Mode
+  isDarkMode: boolean;
+  toggleDarkMode: () => void;
 }
 
 const StoreContext = createContext<StoreContextType | undefined>(undefined);
@@ -107,6 +111,32 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState<boolean>(() => {
     return sessionStorage.getItem('elissia_admin_auth') === 'true';
   });
+
+  // Dark Mode State with localStorage persistence
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('maison_celeste_dark_mode');
+      if (stored !== null) return stored === 'true';
+    }
+    return false;
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('maison_celeste_dark_mode', String(isDarkMode));
+      if (isDarkMode) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    } catch {
+      // ignore
+    }
+  }, [isDarkMode]);
+
+  const toggleDarkMode = () => {
+    setIsDarkMode(prev => !prev);
+  };
 
   // Cart State (Persisted in localStorage)
   const [cart, setCart] = useState<CartItem[]>(() => {
@@ -317,19 +347,39 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
-  // Safety periodic auto-polling when admin is logged in (every 15s)
+  // Ultra-fast live orders polling (every 3.5s) so new orders appear live without any page refresh!
   useEffect(() => {
-    if (!isAdminLoggedIn) return;
+    if (!isAdminLoggedIn && currentView !== 'admin') return;
 
-    // Immediately fetch when becoming admin
-    loadData(true);
+    // Immediately fetch once
+    api.getOrders().then(ords => {
+      const uniqueOrders = ords.filter((ord, idx, arr) =>
+        idx === arr.findIndex(o => o.id === ord.id || (o.orderNumber && o.orderNumber === ord.orderNumber))
+      );
+      setOrders(uniqueOrders);
+      setLastSyncTime(new Date());
+    }).catch(() => {});
 
-    const interval = setInterval(() => {
-      loadData(true);
-    }, 15000);
+    const interval = setInterval(async () => {
+      try {
+        const ords = await api.getOrders();
+        const uniqueOrders = ords.filter((ord, idx, arr) =>
+          idx === arr.findIndex(o => o.id === ord.id || (o.orderNumber && o.orderNumber === ord.orderNumber))
+        );
+        setOrders(prev => {
+          if (uniqueOrders.length !== prev.length || uniqueOrders[0]?.id !== prev[0]?.id) {
+            return uniqueOrders;
+          }
+          return prev;
+        });
+        setLastSyncTime(new Date());
+      } catch (e) {
+        // silent
+      }
+    }, 3500);
 
     return () => clearInterval(interval);
-  }, [isAdminLoggedIn]);
+  }, [isAdminLoggedIn, currentView]);
 
   // Instantly fetch fresh orders from Supabase when admin tab regains focus or becomes visible
   useEffect(() => {
@@ -724,6 +774,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         logoutAdmin,
         demoLoginAdmin,
         simulateDemoOrder,
+        isDarkMode,
+        toggleDarkMode,
       }}
     >
       {children}

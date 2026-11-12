@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { Truck, Search, Sparkles, Building, Home, CheckCircle2 } from 'lucide-react';
+import { Truck, Search, Sparkles, Building, Home, CheckCircle2, ArrowLeft } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { formatPrice, searchMatches } from '../../utils/formatters';
 
 export const ShippingRates: React.FC = () => {
-  const { wilayas, config } = useStore();
+  const { wilayas, config, setCurrentView } = useStore();
   const [search, setSearch] = useState('');
 
   const filteredWilayas = wilayas.filter(
@@ -16,6 +16,17 @@ export const ShippingRates: React.FC = () => {
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8 sm:py-12">
+      {/* Back to Home Button */}
+      <div className="mb-6">
+        <button
+          onClick={() => setCurrentView('home')}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-white border border-stone-200 text-stone-700 hover:text-stone-900 hover:bg-stone-50 text-xs font-bold shadow-xs transition-all active:scale-95"
+        >
+          <ArrowLeft className="w-4 h-4 text-store-primary" />
+          <span>← Retour à la boutique</span>
+        </button>
+      </div>
+
       {/* Header */}
       <div className="text-center max-w-lg mx-auto mb-8">
         <div className="w-12 h-12 rounded-2xl bg-store-secondary text-store-primary flex items-center justify-center mx-auto mb-3 shadow-xs">
@@ -28,13 +39,15 @@ export const ShippingRates: React.FC = () => {
           Expédition sécurisée partout en Algérie avec Yalidine, ZR Express et nos transporteurs partenaires.
         </p>
 
-        {/* Free Shipping Badge */}
-        <div className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-emerald-50 text-emerald-800 text-xs font-semibold border border-emerald-200">
-          <Sparkles className="w-4 h-4 text-emerald-600" />
-          <span>
-            LIVRAISON GRATUITE dès <strong>{formatPrice(config.freeShippingThreshold, config.currency)}</strong> d'achat !
-          </span>
-        </div>
+        {/* Free Shipping Badge (Shown only if enabled) */}
+        {config.freeShippingEnabled && config.freeShippingThreshold > 0 && (
+          <div className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-emerald-50 text-emerald-800 text-xs font-semibold border border-emerald-200">
+            <Sparkles className="w-4 h-4 text-emerald-600" />
+            <span>
+              LIVRAISON GRATUITE dès <strong>{formatPrice(config.freeShippingThreshold, config.currency)}</strong> d'achat !
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Search Input */}

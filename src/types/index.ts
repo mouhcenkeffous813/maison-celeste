@@ -140,6 +140,7 @@ export interface StoreConfig {
   facebookUrl: string;
   tiktokUrl: string;
   freeShippingThreshold: number;
+  freeShippingEnabled?: boolean;
   theme: ThemePreset;
   metaPixelId: string;
   tiktokPixelId: string;

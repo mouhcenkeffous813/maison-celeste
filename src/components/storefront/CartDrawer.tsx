@@ -62,10 +62,15 @@ export const CartDrawer: React.FC = () => {
 
   const communes = currentWilaya?.communes || ['Centre'];
 
+  const isFreeShipping =
+    Boolean(config.freeShippingEnabled) &&
+    config.freeShippingThreshold > 0 &&
+    cartSubtotal >= config.freeShippingThreshold;
+
   const shippingFee = useMemo(() => {
-    if (cartSubtotal >= config.freeShippingThreshold) return 0;
+    if (isFreeShipping) return 0;
     return deliveryType === 'home' ? currentWilaya.homeDeliveryPrice : currentWilaya.stopDeskPrice;
-  }, [cartSubtotal, config.freeShippingThreshold, deliveryType, currentWilaya]);
+  }, [cartSubtotal, isFreeShipping, deliveryType, currentWilaya]);
 
   const grandTotal = cartSubtotal + shippingFee;
 
@@ -513,7 +518,7 @@ export const CartDrawer: React.FC = () => {
               <div className="flex justify-between text-stone-600">
                 <span>Livraison estimée :</span>
                 <span className="text-stone-500 font-mono">
-                  {cartSubtotal >= config.freeShippingThreshold
+                  {isFreeShipping
                     ? 'Offerte'
                     : `dès ${formatPrice(currentWilaya.homeDeliveryPrice, config.currency)}`}
                 </span>

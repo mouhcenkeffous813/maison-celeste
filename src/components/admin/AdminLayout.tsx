@@ -10,7 +10,9 @@ import {
   Sparkles,
   Menu,
   X,
-  Target
+  Target,
+  Sun,
+  Moon
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { AdminLogin } from './AdminLogin';
@@ -24,7 +26,7 @@ import { AdminMarketing } from './AdminMarketing';
 type AdminTab = 'overview' | 'orders' | 'products' | 'shipping' | 'marketing' | 'settings';
 
 export const AdminLayout: React.FC = () => {
-  const { isAdminLoggedIn, logoutAdmin, setCurrentView, config, orders, simulateDemoOrder } = useStore();
+  const { isAdminLoggedIn, logoutAdmin, setCurrentView, config, orders, simulateDemoOrder, isDarkMode, toggleDarkMode } = useStore();
   const [activeTab, setActiveTab] = useState<AdminTab>('overview');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -128,6 +130,17 @@ export const AdminLayout: React.FC = () => {
 
         {/* Bottom Actions: View Storefront & Logout */}
         <div className="space-y-2 pt-4 border-t border-stone-100">
+          <button
+            onClick={toggleDarkMode}
+            className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-semibold text-stone-700 hover:bg-stone-100 transition-colors"
+          >
+            <div className="flex items-center gap-2.5">
+              {isDarkMode ? <Sun className="w-4 h-4 text-amber-500" /> : <Moon className="w-4 h-4 text-stone-500" />}
+              <span>{isDarkMode ? 'Mode Clair' : 'Mode Sombre'}</span>
+            </div>
+            <span className="text-[10px] text-stone-400 font-bold">{isDarkMode ? 'ON' : 'OFF'}</span>
+          </button>
+
           <button
             onClick={() => setCurrentView('home')}
             className="w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl text-xs font-semibold text-stone-700 hover:bg-stone-100 transition-colors"
