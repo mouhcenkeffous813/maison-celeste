@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useMemo } from 'react';
+import React, { createContext, useContext, useEffect, useState, useMemo, useRef } from 'react';
 import confetti from 'canvas-confetti';
 import { Product, Order, Wilaya, StoreConfig, Review, OrderStatus, ThemePreset } from '../types';
 import { api } from '../services/api';
@@ -93,6 +93,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return sessionStorage.getItem('elissia_admin_auth') === 'true';
   });
 
+  const isFetchingRef = useRef(false);
+
   const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
     const id = Math.random().toString(36).substring(2, 9);
     setToasts(prev => [...prev, { id, type, message }]);
@@ -101,8 +103,14 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }, 4000);
   };
 
-  const loadData = async () => {
-    setIsLoading(true);
+  const loadData = async (isSilent = false) => {
+    // Éviter les appels concurrents en double
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
+
+    if (!isSilent) {
+      setIsLoading(true);
+    }
     try {
       const [prods, ords, wils, cfg, revs, cats] = await Promise.all([
         api.getProducts(),
@@ -127,22 +135,28 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       applyThemeVariables(cfg.theme);
     } catch (err) {
       console.error('Error loading store data:', err);
-      showToast('Erreur de chargement des données', 'error');
+      if (!isSilent) {
+        showToast('Erreur de chargement des données', 'error');
+      }
     } finally {
-      setIsLoading(false);
+      if (!isSilent) {
+        setIsLoading(false);
+      }
+      isFetchingRef.current = false;
     }
   };
 
   useEffect(() => {
-    loadData();
+    // Premier chargement initial
+    loadData(false);
 
-    // Debounced listener for custom storage events across tabs or components
+    // Écouteur avec temporisation de sécurité (mise à jour silencieuse)
     let updateTimeout: any = null;
     const handleStoreUpdate = () => {
       if (updateTimeout) clearTimeout(updateTimeout);
       updateTimeout = setTimeout(() => {
-        loadData();
-      }, 150);
+        loadData(true); // Mise à jour silencieuse en arrière-plan sans écran de chargement
+      }, 300);
     };
     window.addEventListener('elissia_store_update', handleStoreUpdate);
     return () => {
@@ -448,7 +462,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         config,
         reviews,
         isLoading,
-        refreshAll: loadData,
+        refreshAll: () => loadData(true),
         createOrder,
         updateOrderStatus,
         updateProduct,

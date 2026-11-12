@@ -205,7 +205,12 @@ export const api = {
 
         if (!error && Array.isArray(data)) {
           const cloudOrders = data.map(mapDbToOrder);
-          saveToStorage(STORAGE_KEYS.ORDERS, cloudOrders);
+          // Mise en cache silencieuse dans localStorage SANS déclencher d'événement récursif
+          try {
+            localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(cloudOrders));
+          } catch (e) {
+            // Ignorer si quota plein
+          }
           return cloudOrders;
         }
       } catch (err) {
