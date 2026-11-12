@@ -86,3 +86,4 @@ export const CartNotification: React.FC = () => {
     </div>
   );
 };
+
