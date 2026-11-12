@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Palette,
   Store,
@@ -22,17 +22,19 @@ import { compressImageFile } from '../../utils/imageCompressor';
 export const AdminSettings: React.FC = () => {
   const { config, updateConfig, setThemePreset, resetDemoData, showToast } = useStore();
 
+  const [selectedTheme, setSelectedTheme] = useState<ThemePreset>(config.theme);
   const [storeName, setStoreName] = useState(config.storeName);
   const [storeTagline, setStoreTagline] = useState(config.storeTagline);
   const [logoUrl, setLogoUrl] = useState(config.logoUrl || '/orlea-logo.svg');
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [phone, setPhone] = useState(config.phone);
   const [whatsappNumber, setWhatsappNumber] = useState(config.whatsappNumber);
   const [instagramUrl, setInstagramUrl] = useState(config.instagramUrl);
   const [facebookUrl, setFacebookUrl] = useState(config.facebookUrl);
   const [tiktokUrl, setTiktokUrl] = useState(config.tiktokUrl);
-  const [metaPixelId, setMetaPixelId] = useState(config.metaPixelId);
-  const [tiktokPixelId, setTiktokPixelId] = useState(config.tiktokPixelId);
+  const [metaPixelId, setMetaPixelId] = useState(config.metaPixelId || '');
+  const [tiktokPixelId, setTiktokPixelId] = useState(config.tiktokPixelId || '');
   const [deliveryTimeEstimate, setDeliveryTimeEstimate] = useState(config.deliveryTimeEstimate);
   const [announcementText, setAnnouncementText] = useState(config.announcementText);
   const [adminPin, setAdminPin] = useState(config.adminPin);
@@ -41,10 +43,31 @@ export const AdminSettings: React.FC = () => {
   const [customPrimary, setCustomPrimary] = useState(config.theme.primary);
   const [customSecondary, setCustomSecondary] = useState(config.theme.secondary);
 
+  // Synchronisation automatique des champs de formulaire dès que la config Supabase est chargée ou modifiée
+  useEffect(() => {
+    setSelectedTheme(config.theme);
+    setStoreName(config.storeName);
+    setStoreTagline(config.storeTagline);
+    setLogoUrl(config.logoUrl || '/orlea-logo.svg');
+    setPhone(config.phone);
+    setWhatsappNumber(config.whatsappNumber);
+    setInstagramUrl(config.instagramUrl);
+    setFacebookUrl(config.facebookUrl);
+    setTiktokUrl(config.tiktokUrl);
+    setMetaPixelId(config.metaPixelId || '');
+    setTiktokPixelId(config.tiktokPixelId || '');
+    setDeliveryTimeEstimate(config.deliveryTimeEstimate);
+    setAnnouncementText(config.announcementText);
+    setAdminPin(config.adminPin);
+    setCustomPrimary(config.theme.primary);
+    setCustomSecondary(config.theme.secondary);
+  }, [config]);
+
   const handleSelectPreset = async (preset: ThemePreset) => {
-    await setThemePreset(preset);
+    setSelectedTheme(preset);
     setCustomPrimary(preset.primary);
     setCustomSecondary(preset.secondary);
+    await setThemePreset(preset);
   };
 
   const handleApplyCustomColor = async () => {
@@ -58,26 +81,36 @@ export const AdminSettings: React.FC = () => {
       bgBase: '#FFFDFB',
       accent: '#E05A6D',
     };
+    setSelectedTheme(customTheme);
     await setThemePreset(customTheme);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await updateConfig({
-      storeName: storeName.trim(),
-      storeTagline: storeTagline.trim(),
-      logoUrl: logoUrl.trim(),
-      phone: phone.trim(),
-      whatsappNumber: whatsappNumber.trim(),
-      instagramUrl: instagramUrl.trim(),
-      facebookUrl: facebookUrl.trim(),
-      tiktokUrl: tiktokUrl.trim(),
-      metaPixelId: metaPixelId.trim(),
-      tiktokPixelId: tiktokPixelId.trim(),
-      deliveryTimeEstimate: deliveryTimeEstimate.trim(),
-      announcementText: announcementText.trim(),
-      adminPin: adminPin.trim() || '1234',
-    });
+    setIsSaving(true);
+    try {
+      await updateConfig({
+        storeName: storeName.trim(),
+        storeTagline: storeTagline.trim(),
+        logoUrl: logoUrl.trim(),
+        phone: phone.trim(),
+        whatsappNumber: whatsappNumber.trim(),
+        instagramUrl: instagramUrl.trim(),
+        facebookUrl: facebookUrl.trim(),
+        tiktokUrl: tiktokUrl.trim(),
+        metaPixelId: metaPixelId.trim(),
+        tiktokPixelId: tiktokPixelId.trim(),
+        deliveryTimeEstimate: deliveryTimeEstimate.trim(),
+        announcementText: announcementText.trim(),
+        adminPin: adminPin.trim() || '1234',
+        theme: selectedTheme,
+      });
+    } catch (err) {
+      console.error('Erreur sauvegarde config:', err);
+      showToast('Erreur lors de la sauvegarde', 'error');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -115,7 +148,7 @@ export const AdminSettings: React.FC = () => {
             </label>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
               {THEME_PRESETS.map(preset => {
-                const isSelected = config.theme.id === preset.id;
+                const isSelected = (selectedTheme?.id || config.theme.id) === preset.id;
                 return (
                   <button
                     key={preset.id}
@@ -123,7 +156,7 @@ export const AdminSettings: React.FC = () => {
                     onClick={() => handleSelectPreset(preset)}
                     className={`p-3 rounded-2xl border text-left flex items-center justify-between transition-all ${
                       isSelected
-                        ? 'border-store-primary bg-store-secondary/60 ring-2 ring-store-primary/30'
+                        ? 'border-store-primary bg-store-secondary/60 ring-2 ring-store-primary/30 shadow-xs'
                         : 'border-store-border hover:border-stone-300 bg-white'
                     }`}
                   >
@@ -464,10 +497,11 @@ export const AdminSettings: React.FC = () => {
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
           <button
             type="submit"
-            className="w-full sm:w-auto px-8 py-3.5 bg-store-primary hover:bg-store-primary-hover text-white text-xs font-bold uppercase tracking-wider rounded-2xl shadow-soft flex items-center justify-center gap-2 transition-all"
+            disabled={isSaving}
+            className="w-full sm:w-auto px-8 py-3.5 bg-store-primary hover:bg-store-primary-hover text-white text-xs font-bold uppercase tracking-wider rounded-2xl shadow-soft flex items-center justify-center gap-2 transition-all disabled:opacity-50"
           >
             <Save className="w-4 h-4" />
-            <span>Enregistrer Tous les Paramètres</span>
+            <span>{isSaving ? 'Enregistrement en cours...' : 'Enregistrer Tous les Paramètres'}</span>
           </button>
 
           <button

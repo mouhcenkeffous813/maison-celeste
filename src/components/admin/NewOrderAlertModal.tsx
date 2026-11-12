@@ -152,3 +152,4 @@ export const NewOrderAlertModal: React.FC<NewOrderAlertModalProps> = ({
     </div>
   );
 };
+

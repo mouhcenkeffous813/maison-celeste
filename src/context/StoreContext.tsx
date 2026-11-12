@@ -144,6 +144,16 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setIsDarkMode(prev => !prev);
   };
 
+  // Synchronisation dynamique du titre du navigateur et des variables CSS du thème
+  useEffect(() => {
+    if (config.theme) {
+      applyThemeVariables(config.theme);
+    }
+    if (typeof document !== 'undefined' && config.storeName) {
+      document.title = `${config.storeName} | ${config.storeTagline || 'Boutique en Ligne COD Algérie'}`;
+    }
+  }, [config.theme, config.storeName, config.storeTagline]);
+
   // Cart State (Persisted in localStorage)
   const [cart, setCart] = useState<CartItem[]>(() => {
     if (typeof window !== 'undefined') {
@@ -354,14 +364,14 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
-  // Realtime Supabase Channel: auto-update when new order arrives from any client
+  // Realtime Supabase Channel: auto-update when orders or store_config change on any client
   useEffect(() => {
     if (!supabase || !isSupabaseConfigured) return;
 
     let channel: any = null;
     try {
       channel = supabase
-        .channel('public:orders-realtime-sync')
+        .channel('public:store-realtime-sync')
         .on(
           'postgres_changes',
           { event: '*', schema: 'public', table: 'orders' },
@@ -370,8 +380,16 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             loadData(true);
           }
         )
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'store_config' },
+          (payload) => {
+            console.log('[Supabase Realtime] Changement détecté sur store_config:', payload);
+            loadData(true);
+          }
+        )
         .subscribe((status) => {
-          console.log('[Supabase Realtime] Statut abonnement commandes:', status);
+          console.log('[Supabase Realtime] Statut abonnement:', status);
         });
     } catch (err) {
       console.warn('[Supabase Realtime] Erreur abonnement:', err);
@@ -590,15 +608,32 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const updateConfig = async (updates: Partial<StoreConfig>) => {
+    // 1. Mise à jour optimiste immédiate dans le state React et dans le DOM
+    setConfig(prev => {
+      const merged = { ...prev, ...updates };
+      if (merged.theme) {
+        applyThemeVariables(merged.theme);
+      }
+      return merged;
+    });
+
+    if (updates.theme) {
+      applyThemeVariables(updates.theme);
+    }
+
+    // 2. Persistance dans le stockage local et Supabase Cloud
     const updated = await api.updateStoreConfig(updates);
     setConfig(updated);
-    showToast('Paramètres de la boutique enregistrés', 'success');
+    if (updated.theme) {
+      applyThemeVariables(updated.theme);
+    }
+    showToast('Paramètres de la boutique enregistrés avec succès !', 'success');
     return updated;
   };
 
-  const setThemePreset = async (preset: ThemePreset) => {
-    const updated = await updateConfig({ theme: preset });
-    applyThemeVariables(updated.theme);
+  const setThemePreset = async (preset: ThemePreset): Promise<void> => {
+    applyThemeVariables(preset);
+    await updateConfig({ theme: preset });
   };
 
   const addCategory = async (name: string) => {

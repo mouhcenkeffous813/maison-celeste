@@ -35,7 +35,7 @@ export const HomePage: React.FC = () => {
         <div className="max-w-6xl mx-auto px-4 py-8 sm:py-14 text-center relative z-10">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white border border-store-border shadow-xs text-xs font-semibold text-store-primary mb-4 animate-bounce-short">
             <Sparkles className="w-3.5 h-3.5 text-store-accent" />
-            <span>NOUVELLE COLLECTION 2026 • COD ALGÉRIE</span>
+            <span>{config.storeName ? config.storeName.toUpperCase() : 'MAISON CÉLESTE'} • NOUVELLE COLLECTION 2026 • COD ALGÉRIE</span>
           </div>
 
           <h1 className="font-serif text-3xl sm:text-5xl md:text-6xl font-extrabold text-stone-900 tracking-tight leading-tight max-w-3xl mx-auto">
@@ -43,8 +43,8 @@ export const HomePage: React.FC = () => {
           </h1>
 
           <p className="mt-3 sm:mt-4 text-xs sm:text-base text-stone-600 max-w-xl mx-auto font-light leading-relaxed">
-            Découvrez nos pièces signatures pensées pour la femme moderne algérienne.
-            Livraison rapide à domicile ou en point relais dans <strong className="text-stone-900 font-semibold">les 58 Wilayas</strong> avec paiement à réception.
+            {config.storeTagline || 'Découvrez nos pièces signatures pensées pour la femme moderne algérienne.'}
+            <span className="block mt-1">Livraison rapide à domicile ou en point relais dans <strong className="text-stone-900 font-semibold">les 58 Wilayas</strong> avec paiement à réception.</span>
           </p>
 
           {/* Trust Guarantees Bar */}

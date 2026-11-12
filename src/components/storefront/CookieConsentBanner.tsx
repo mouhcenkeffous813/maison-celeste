@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { ShieldCheck, Cookie, Settings, Check, X } from 'lucide-react';
 import { consentManager } from '../../services/consentManager';
 import { ConsentPreferences } from '../../types/marketing';
+import { useStore } from '../../context/StoreContext';
 
 export const CookieConsentBanner: React.FC = () => {
+  const { config } = useStore();
   const [isVisible, setIsVisible] = useState(false);
   const [showCustomize, setShowCustomize] = useState(false);
   const [preferences, setPreferences] = useState<ConsentPreferences>(() =>
@@ -55,7 +57,7 @@ export const CookieConsentBanner: React.FC = () => {
               Confidentialité & Suivi Publicitaire
             </h3>
             <p className="text-xs text-stone-500 mt-0.5 leading-relaxed">
-              Maison Céleste utilise des cookies pour assurer le bon fonctionnement de la boutique et, avec votre accord, des pixels publicitaires (Meta, TikTok) pour mesurer nos campagnes.
+              {config.storeName} utilise des cookies pour assurer le bon fonctionnement de la boutique et, avec votre accord, des pixels publicitaires (Meta, TikTok) pour mesurer nos campagnes.
             </p>
           </div>
         </div>

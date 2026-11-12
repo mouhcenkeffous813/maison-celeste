@@ -518,6 +518,13 @@ export const api = {
               ? data.theme
               : config.theme;
 
+          // Récupération de free_shipping_enabled depuis la colonne dédiée OU depuis l'objet theme JSONB
+          const isFreeShippingOn = data.free_shipping_enabled !== undefined
+            ? Boolean(data.free_shipping_enabled)
+            : (data.theme && typeof data.theme === 'object' && (data.theme as any).free_shipping_enabled !== undefined
+                ? Boolean((data.theme as any).free_shipping_enabled)
+                : config.freeShippingEnabled);
+
           config = {
             storeName: data.store_name ?? config.storeName,
             storeTagline: data.store_tagline ?? config.storeTagline,
@@ -529,7 +536,7 @@ export const api = {
             facebookUrl: data.facebook_url ?? config.facebookUrl,
             tiktokUrl: data.tiktok_url ?? config.tiktokUrl,
             freeShippingThreshold: Number(data.free_shipping_threshold ?? config.freeShippingThreshold),
-            freeShippingEnabled: data.free_shipping_enabled !== undefined ? Boolean(data.free_shipping_enabled) : config.freeShippingEnabled,
+            freeShippingEnabled: isFreeShippingOn,
             theme: validatedTheme,
             metaPixelId: data.meta_pixel_id ?? config.metaPixelId,
             tiktokPixelId: data.tiktok_pixel_id ?? config.tiktokPixelId,
@@ -553,17 +560,23 @@ export const api = {
   },
 
   async updateStoreConfig(updates: Partial<StoreConfig>): Promise<StoreConfig> {
-    const current = await this.getStoreConfig();
+    const current = loadFromStorage<StoreConfig>(STORAGE_KEYS.CONFIG, DEFAULT_STORE_CONFIG);
     const updated: StoreConfig = { ...current, ...updates };
     saveToStorage(STORAGE_KEYS.CONFIG, updated);
-    if (updates.theme) {
-      applyThemeVariables(updates.theme);
+    if (updated.theme) {
+      applyThemeVariables(updated.theme);
     }
 
     // Synchronisation vers Supabase Cloud
     if (supabase && isSupabaseConfigured) {
       try {
-        const cloudPayload = {
+        // Sauvegarder free_shipping_enabled dans theme JSONB pour éviter toute erreur de colonne SQL
+        const themeToPersist = {
+          ...(updated.theme || current.theme),
+          free_shipping_enabled: updated.freeShippingEnabled ?? false,
+        };
+
+        const cloudPayload: Record<string, any> = {
           id: 'current',
           store_name: updated.storeName,
           store_tagline: updated.storeTagline,
@@ -575,8 +588,7 @@ export const api = {
           facebook_url: updated.facebookUrl,
           tiktok_url: updated.tiktokUrl,
           free_shipping_threshold: updated.freeShippingThreshold,
-          free_shipping_enabled: updated.freeShippingEnabled ?? false,
-          theme: updated.theme,
+          theme: themeToPersist,
           meta_pixel_id: updated.metaPixelId,
           tiktok_pixel_id: updated.tiktokPixelId,
           delivery_time_estimate: updated.deliveryTimeEstimate,
@@ -585,11 +597,17 @@ export const api = {
           updated_at: new Date().toISOString(),
         };
 
-        await supabase
+        const { error } = await supabase
           .from('store_config')
           .upsert(cloudPayload, { onConflict: 'id' });
+
+        if (error) {
+          console.error('[Supabase] Erreur enregistrement store_config:', error);
+        } else {
+          console.log('[Supabase] store_config enregistré avec succès dans le Cloud !');
+        }
       } catch (err) {
-        console.warn('Supabase store_config sync not ready, saved in localStorage only');
+        console.warn('Supabase store_config sync not ready, saved in localStorage only', err);
       }
     }
 

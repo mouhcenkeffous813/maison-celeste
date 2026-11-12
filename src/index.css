@@ -69,10 +69,10 @@ body {
 
 /* ================= DARK MODE ELEGANCE ================= */
 .dark {
-  --color-bg-base: #121214;
-  --color-secondary: #1c1c1f;
-  --color-text-main: #f4f4f5;
-  --color-border: #27272a;
+  --color-bg-base: #121214 !important;
+  --color-secondary: #1c1c1f !important;
+  --color-text-main: #f4f4f5 !important;
+  --color-border: #27272a !important;
   color-scheme: dark;
 }
 
