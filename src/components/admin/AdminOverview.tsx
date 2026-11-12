@@ -696,13 +696,27 @@ export const AdminOverview: React.FC<{ onNavigateToOrders: () => void }> = ({ on
                     </td>
 
                     {/* Product & Variant */}
-                    <td className="py-3 px-3 max-w-[180px]">
-                      <p className="font-medium text-stone-900 truncate" title={order.productTitle}>
-                        {order.productTitle}
-                      </p>
-                      <p className="text-[10px] text-stone-500">
-                        {order.selectedColor} • <strong className="text-stone-700">{order.selectedSize}</strong>
-                      </p>
+                    <td className="py-3 px-3 max-w-[200px]">
+                      {order.items && order.items.length > 1 ? (
+                        <div>
+                          <p className="font-bold text-xs text-stone-900 truncate flex items-center gap-1">
+                            <span className="px-1.5 py-0.5 rounded bg-stone-900 text-white text-[9px]">Panier</span>
+                            <span>{order.items.length} articles (x{order.quantity})</span>
+                          </p>
+                          <p className="text-[10px] text-stone-500 truncate mt-0.5" title={order.items.map(i => `${i.productTitle} (x${i.quantity})`).join(', ')}>
+                            {order.items.map(i => i.productTitle).join(', ')}
+                          </p>
+                        </div>
+                      ) : (
+                        <div>
+                          <p className="font-medium text-stone-900 truncate" title={order.productTitle}>
+                            {order.productTitle}
+                          </p>
+                          <p className="text-[10px] text-stone-500">
+                            {order.selectedColor} • <strong className="text-stone-700">{order.selectedSize}</strong>
+                          </p>
+                        </div>
+                      )}
                     </td>
 
                     {/* Total Price */}

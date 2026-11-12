@@ -145,60 +145,107 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
           <div className="flex items-center justify-between">
             <h4 className="font-serif text-sm font-bold text-stone-900 flex items-center gap-1.5">
               <ShoppingBag className="w-4 h-4 text-store-primary" />
-              <span>Article Commandé</span>
+              <span>{order.items && order.items.length > 1 ? `Articles du Panier (${order.items.length})` : 'Article Commandé'}</span>
             </h4>
 
             {/* High-Contrast Prominent Quantity Badge */}
             <div className="flex items-center gap-1 bg-stone-900 text-white px-3 py-1 rounded-xl shadow-xs">
-              <span className="text-[11px] uppercase font-bold tracking-wider text-stone-300">Quantité :</span>
+              <span className="text-[11px] uppercase font-bold tracking-wider text-stone-300">Total :</span>
               <span className="font-mono text-sm font-black text-rose-300">
                 x{order.quantity}
               </span>
               <span className="text-[11px] font-semibold text-white">
-                ({order.quantity} {order.quantity > 1 ? 'pièces' : 'pièce'})
+                ({order.quantity} {order.quantity > 1 ? 'articles' : 'article'})
               </span>
             </div>
           </div>
 
-          <div className="flex items-start gap-3.5 bg-white p-3 rounded-xl border border-store-border">
-            <img
-              src={order.productImage}
-              alt={order.productTitle}
-              className="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded-xl border border-stone-200 shrink-0 shadow-xs"
-            />
-            <div className="flex-1 min-w-0">
-              <p className="font-serif font-bold text-sm text-stone-900 leading-snug">
-                {order.productTitle}
-              </p>
+          {/* Multiple items breakdown or single item */}
+          {order.items && order.items.length > 1 ? (
+            <div className="space-y-2.5">
+              {order.items.map((it, idx) => (
+                <div key={idx} className="flex items-start gap-3.5 bg-white p-3 rounded-xl border border-store-border">
+                  <img
+                    src={it.productImage}
+                    alt={it.productTitle}
+                    className="w-14 h-14 object-cover rounded-xl border border-stone-200 shrink-0 shadow-xs"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="font-serif font-bold text-sm text-stone-900 leading-snug">
+                        {it.productTitle}
+                      </p>
+                      <span className="px-2 py-0.5 rounded-lg bg-stone-900 text-white font-mono font-bold text-xs">
+                        x{it.quantity}
+                      </span>
+                    </div>
 
-              {/* Variant breakdown */}
-              <div className="flex flex-wrap items-center gap-2 mt-1.5 text-xs">
-                {order.selectedColor && (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-stone-100 text-stone-800 font-medium border border-stone-200">
-                    <span>Couleur :</span>
-                    <strong className="text-stone-900">{order.selectedColor}</strong>
+                    <div className="flex flex-wrap items-center gap-2 mt-1 text-xs">
+                      {it.selectedColor && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-stone-100 text-stone-700 text-[11px]">
+                          <span>Couleur:</span>
+                          <strong className="text-stone-900">{it.selectedColor}</strong>
+                        </span>
+                      )}
+                      {it.selectedSize && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-rose-50 text-rose-800 text-[11px]">
+                          <span>Taille:</span>
+                          <strong className="text-store-primary">{it.selectedSize}</strong>
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="mt-1.5 text-xs flex items-center justify-between text-stone-600 font-mono">
+                      <span>{formatPrice(it.unitPrice, config.currency)} / u</span>
+                      <span className="font-bold text-stone-900">
+                        {formatPrice(it.totalPrice, config.currency)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="flex items-start gap-3.5 bg-white p-3 rounded-xl border border-store-border">
+              <img
+                src={order.productImage}
+                alt={order.productTitle}
+                className="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded-xl border border-stone-200 shrink-0 shadow-xs"
+              />
+              <div className="flex-1 min-w-0">
+                <p className="font-serif font-bold text-sm text-stone-900 leading-snug">
+                  {order.productTitle}
+                </p>
+
+                {/* Variant breakdown */}
+                <div className="flex flex-wrap items-center gap-2 mt-1.5 text-xs">
+                  {order.selectedColor && (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-stone-100 text-stone-800 font-medium border border-stone-200">
+                      <span>Couleur :</span>
+                      <strong className="text-stone-900">{order.selectedColor}</strong>
+                    </span>
+                  )}
+
+                  {order.selectedSize && (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-rose-50 text-rose-900 font-medium border border-rose-200">
+                      <span>Taille / Pointure :</span>
+                      <strong className="text-store-primary font-bold">{order.selectedSize}</strong>
+                    </span>
+                  )}
+                </div>
+
+                {/* Price per unit & subtotal */}
+                <div className="mt-2 text-xs flex items-center justify-between text-stone-600 font-mono">
+                  <span>
+                    {formatPrice(unitPrice, config.currency)} × <strong>{order.quantity}</strong>
                   </span>
-                )}
-
-                {order.selectedSize && (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-rose-50 text-rose-900 font-medium border border-rose-200">
-                    <span>Taille / Pointure :</span>
-                    <strong className="text-store-primary font-bold">{order.selectedSize}</strong>
+                  <span className="font-bold text-stone-900">
+                    Sous-total : {formatPrice(order.productTotal, config.currency)}
                   </span>
-                )}
-              </div>
-
-              {/* Price per unit & subtotal */}
-              <div className="mt-2 text-xs flex items-center justify-between text-stone-600 font-mono">
-                <span>
-                  {formatPrice(unitPrice, config.currency)} × <strong>{order.quantity}</strong>
-                </span>
-                <span className="font-bold text-stone-900">
-                  Sous-total : {formatPrice(order.productTotal, config.currency)}
-                </span>
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           {/* Detailed Financial Calculation */}
           <div className="bg-white rounded-xl p-3 border border-stone-200 text-xs space-y-1.5">

@@ -135,16 +135,31 @@ export const OrderDeliverySlip: React.FC<OrderDeliverySlipProps> = ({ order, con
                 </tr>
               </thead>
               <tbody className="divide-y divide-stone-100">
-                <tr>
-                  <td className="py-2.5 font-bold text-stone-900">{order.productTitle}</td>
-                  <td className="py-2.5 font-semibold text-stone-700">
-                    {order.selectedColor} • {order.selectedSize}
-                  </td>
-                  <td className="py-2.5 text-center font-bold font-mono">{order.quantity}</td>
-                  <td className="py-2.5 text-right font-mono font-bold">
-                    {formatPrice(order.productTotal, config.currency)}
-                  </td>
-                </tr>
+                {order.items && order.items.length > 1 ? (
+                  order.items.map((it, idx) => (
+                    <tr key={idx}>
+                      <td className="py-2 font-bold text-stone-900">{it.productTitle}</td>
+                      <td className="py-2 font-semibold text-stone-700">
+                        {it.selectedColor} {it.selectedSize ? `• ${it.selectedSize}` : ''}
+                      </td>
+                      <td className="py-2 text-center font-bold font-mono">{it.quantity}</td>
+                      <td className="py-2 text-right font-mono font-bold">
+                        {formatPrice(it.totalPrice, config.currency)}
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td className="py-2.5 font-bold text-stone-900">{order.productTitle}</td>
+                    <td className="py-2.5 font-semibold text-stone-700">
+                      {order.selectedColor} • {order.selectedSize}
+                    </td>
+                    <td className="py-2.5 text-center font-bold font-mono">{order.quantity}</td>
+                    <td className="py-2.5 text-right font-mono font-bold">
+                      {formatPrice(order.productTotal, config.currency)}
+                    </td>
+                  </tr>
+                )}
                 <tr>
                   <td colSpan={3} className="py-1.5 text-right text-stone-600">
                     Frais de livraison ({order.wilayaName} - {order.deliveryType === 'home' ? 'Domicile' : 'Stop Desk'}) :

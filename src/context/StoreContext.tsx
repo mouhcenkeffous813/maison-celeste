@@ -382,12 +382,20 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
 
     const deliveryModeStr = order.deliveryType === 'home' ? 'À Domicile' : 'Au Bureau (Stop Desk)';
+    
+    let articlesDetail = `👗 *${order.productTitle}*\n` +
+      `✨ Variante : ${order.selectedColor} | ${order.selectedSize}\n` +
+      `📦 Quantité : ${order.quantity}\n`;
+
+    if (order.items && order.items.length > 1) {
+      articlesDetail = `🛍️ *Détail de votre Panier (${order.items.length} articles) :*\n` +
+        order.items.map((it, idx) => `  ${idx + 1}. *${it.productTitle}* (${it.selectedColor} ${it.selectedSize ? `• ${it.selectedSize}` : ''}) × ${it.quantity} = ${it.totalPrice.toLocaleString()} ${config.currency}`).join('\n') + '\n';
+    }
+
     const text = `Bonjour ${order.customerName},\n\n` +
       `C'est la boutique *${config.storeName}*.\n` +
-      `Nous avons bien reçu votre commande *${order.orderNumber}* pour :\n` +
-      `👗 *${order.productTitle}*\n` +
-      `✨ Variante : ${order.selectedColor} | ${order.selectedSize}\n` +
-      `📦 Quantité : ${order.quantity}\n` +
+      `Nous avons bien reçu votre commande *${order.orderNumber}* pour :\n\n` +
+      articlesDetail + '\n' +
       `🚚 Destination : ${order.wilayaName} (${order.commune}) - ${deliveryModeStr}\n` +
       `💰 Montant Total COD : *${order.grandTotal.toLocaleString()} ${config.currency}*\n\n` +
       `Pourriez-vous nous confirmer votre disponibilité pour l'expédition sous 24h-48h ?\n\n` +

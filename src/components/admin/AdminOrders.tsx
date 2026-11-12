@@ -210,26 +210,58 @@ export const AdminOrders: React.FC = () => {
                     </td>
 
                     {/* Product & Variant */}
-                    <td className="py-3.5 px-3.5 max-w-[200px]">
-                      <div className="flex items-center gap-2">
-                        <img
-                          src={order.productImage}
-                          alt=""
-                          className="w-8 h-8 rounded-lg object-cover flex-shrink-0 border border-stone-200"
-                        />
-                        <div className="min-w-0">
-                          <p className="font-medium text-stone-900 truncate" title={order.productTitle}>
-                            {order.productTitle}
-                          </p>
-                          <div className="flex items-center gap-1 text-[10px] text-stone-500">
-                            <span className="font-semibold text-stone-800">{order.selectedColor}</span>
-                            <span>•</span>
-                            <span className="font-semibold text-stone-800">{order.selectedSize}</span>
-                            <span>•</span>
-                            <span>Qté: {order.quantity}</span>
+                    <td className="py-3.5 px-3.5 max-w-[220px]">
+                      {order.items && order.items.length > 1 ? (
+                        <div className="space-y-1.5">
+                          <div className="flex items-center gap-1.5">
+                            <span className="px-2 py-0.5 rounded-md bg-stone-900 text-white text-[10px] font-bold">
+                              Panier ({order.items.length} articles)
+                            </span>
+                            <span className="text-[10px] font-bold text-rose-500">
+                              Total x{order.quantity}
+                            </span>
+                          </div>
+                          <div className="space-y-1 max-h-24 overflow-y-auto pr-1">
+                            {order.items.map((it, idx) => (
+                              <div key={idx} className="flex items-center gap-1.5 text-[11px] bg-stone-50 p-1 rounded-lg border border-stone-100">
+                                <img
+                                  src={it.productImage}
+                                  alt=""
+                                  className="w-5 h-5 rounded object-cover shrink-0 border border-stone-200"
+                                />
+                                <div className="min-w-0 flex-1 truncate">
+                                  <span className="font-semibold text-stone-900 truncate block">
+                                    {it.productTitle}
+                                  </span>
+                                  <span className="text-[9px] text-stone-500 block truncate">
+                                    {it.selectedColor} {it.selectedSize ? `• ${it.selectedSize}` : ''} • <strong className="text-stone-800">x{it.quantity}</strong>
+                                  </span>
+                                </div>
+                              </div>
+                            ))}
                           </div>
                         </div>
-                      </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <img
+                            src={order.productImage}
+                            alt=""
+                            className="w-8 h-8 rounded-lg object-cover flex-shrink-0 border border-stone-200"
+                          />
+                          <div className="min-w-0">
+                            <p className="font-medium text-stone-900 truncate" title={order.productTitle}>
+                              {order.productTitle}
+                            </p>
+                            <div className="flex items-center gap-1 text-[10px] text-stone-500">
+                              <span className="font-semibold text-stone-800">{order.selectedColor}</span>
+                              <span>•</span>
+                              <span className="font-semibold text-stone-800">{order.selectedSize}</span>
+                              <span>•</span>
+                              <span>Qté: {order.quantity}</span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </td>
 
                     {/* Total Price */}

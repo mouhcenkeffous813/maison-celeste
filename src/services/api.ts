@@ -27,6 +27,7 @@ function mapDbToOrder(row: any): Order {
     productTotal: Number(row.product_total) || 0,
     shippingFee: Number(row.shipping_fee) || 0,
     grandTotal: Number(row.grand_total) || 0,
+    items: Array.isArray(row.items) ? row.items : undefined,
     status: (row.status as OrderStatus) || 'pending',
     trackingCode: row.tracking_code || undefined,
     notes: row.notes || undefined,
@@ -36,7 +37,7 @@ function mapDbToOrder(row: any): Order {
 }
 
 function mapOrderToDb(order: Order) {
-  return {
+  const base: any = {
     id: order.id,
     order_number: order.orderNumber,
     customer_name: order.customerName,
@@ -62,6 +63,10 @@ function mapOrderToDb(order: Order) {
     created_at: order.createdAt,
     updated_at: order.updatedAt,
   };
+  if (order.items && Array.isArray(order.items)) {
+    base.items = order.items;
+  }
+  return base;
 }
 
 const STORAGE_KEYS = {
@@ -308,24 +313,35 @@ export const api = {
     ];
     saveToStorage(STORAGE_KEYS.ORDERS, updated);
 
-    // Déduction automatique du stock de variante
+    // Déduction automatique du stock pour les articles commandés
     try {
       const products = await this.getProducts();
-      const product = products.find(p => p.id === data.productId);
-      if (product) {
-        const variantIdx = product.variants.findIndex(
-          v => v.colorName === data.selectedColor && v.size === data.selectedSize
-        );
-        if (variantIdx !== -1) {
-          product.variants[variantIdx].stock = Math.max(
-            0,
-            product.variants[variantIdx].stock - data.quantity
+      const itemsToDeduct = (data.items && data.items.length > 0)
+        ? data.items
+        : [{
+            productId: data.productId,
+            selectedColor: data.selectedColor,
+            selectedSize: data.selectedSize,
+            quantity: data.quantity,
+          }];
+
+      for (const item of itemsToDeduct) {
+        const product = products.find(p => p.id === item.productId);
+        if (product) {
+          const variantIdx = product.variants.findIndex(
+            v => v.colorName === item.selectedColor && v.size === item.selectedSize
           );
-          product.totalStock = product.variants.reduce((acc, v) => acc + v.stock, 0);
-          await this.updateProduct(product.id, {
-            variants: product.variants,
-            totalStock: product.totalStock,
-          });
+          if (variantIdx !== -1) {
+            product.variants[variantIdx].stock = Math.max(
+              0,
+              product.variants[variantIdx].stock - item.quantity
+            );
+            product.totalStock = product.variants.reduce((acc, v) => acc + v.stock, 0);
+            await this.updateProduct(product.id, {
+              variants: product.variants,
+              totalStock: product.totalStock,
+            });
+          }
         }
       }
     } catch (err) {
