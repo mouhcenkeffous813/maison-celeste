@@ -6,7 +6,23 @@ import { DEFAULT_STORE_CONFIG, applyThemeVariables } from '../config/store.confi
 import rawWilayas from '../config/wilayas.json';
 import { supabase, isSupabaseConfigured } from './supabaseClient';
 
+export const ITEMS_DELIMITER = '\n\n__MC_ITEMS_DATA__:';
+
 function mapDbToOrder(row: any): Order {
+  let parsedItems = Array.isArray(row.items) ? row.items : undefined;
+  let cleanNotes = row.notes || undefined;
+
+  // Extract embedded items safely from notes if present
+  if (!parsedItems && row.notes && typeof row.notes === 'string' && row.notes.includes(ITEMS_DELIMITER)) {
+    try {
+      const parts = row.notes.split(ITEMS_DELIMITER);
+      cleanNotes = parts[0].trim() || undefined;
+      parsedItems = JSON.parse(parts[1]);
+    } catch (e) {
+      console.warn('Failed to parse embedded order items from notes', e);
+    }
+  }
+
   return {
     id: row.id,
     orderNumber: row.order_number,
@@ -27,17 +43,23 @@ function mapDbToOrder(row: any): Order {
     productTotal: Number(row.product_total) || 0,
     shippingFee: Number(row.shipping_fee) || 0,
     grandTotal: Number(row.grand_total) || 0,
-    items: Array.isArray(row.items) ? row.items : undefined,
+    items: parsedItems,
     status: (row.status as OrderStatus) || 'pending',
     trackingCode: row.tracking_code || undefined,
-    notes: row.notes || undefined,
+    notes: cleanNotes,
     createdAt: row.created_at || new Date().toISOString(),
     updatedAt: row.updated_at || new Date().toISOString(),
   };
 }
 
 function mapOrderToDb(order: Order) {
-  const base: any = {
+  let combinedNotes = order.notes || null;
+  if (order.items && Array.isArray(order.items) && order.items.length > 0) {
+    const rawNotes = order.notes ? order.notes.split(ITEMS_DELIMITER)[0] : '';
+    combinedNotes = (rawNotes ? rawNotes + ITEMS_DELIMITER : ITEMS_DELIMITER) + JSON.stringify(order.items);
+  }
+
+  return {
     id: order.id,
     order_number: order.orderNumber,
     customer_name: order.customerName,
@@ -59,14 +81,10 @@ function mapOrderToDb(order: Order) {
     grand_total: order.grandTotal,
     status: order.status,
     tracking_code: order.trackingCode || null,
-    notes: order.notes || null,
+    notes: combinedNotes,
     created_at: order.createdAt,
     updated_at: order.updatedAt,
   };
-  if (order.items && Array.isArray(order.items)) {
-    base.items = order.items;
-  }
-  return base;
 }
 
 const STORAGE_KEYS = {
@@ -291,22 +309,70 @@ export const api = {
       updatedAt: new Date().toISOString(),
     };
 
-    // 1. Sauvegarde dans le Cloud Supabase
+    // 1. Sauvegarde dans le Cloud Supabase (Source de vérité absolue)
     if (supabase && isSupabaseConfigured) {
-      try {
-        const payload = mapOrderToDb(newOrder);
-        const { error } = await supabase.from('orders').insert([payload]);
-        if (error) {
-          console.warn('[Supabase] Erreur insertion commande distante:', error.message);
-        } else {
-          console.log('[Supabase] Commande synchronisée dans le Cloud avec succès !', orderNumber);
-        }
-      } catch (err) {
-        console.warn('[Supabase] Exception réseau lors de la création de la commande:', err);
+      const payload = mapOrderToDb(newOrder);
+      const { data: insertedData, error } = await supabase
+        .from('orders')
+        .insert([payload])
+        .select()
+        .single();
+
+      if (error) {
+        console.error('[Supabase] Erreur critique insertion commande distante:', error);
+        throw new Error(`Échec de validation de la commande dans la base centrale: ${error.message}`);
       }
+
+      console.log('[Supabase] Commande confirmée et enregistrée avec succès dans le Cloud:', orderNumber);
+
+      const confirmedOrder = insertedData ? mapDbToOrder(insertedData) : newOrder;
+
+      // 2. Cache local réactif avec la commande confirmée par Supabase
+      const updated = [
+        confirmedOrder,
+        ...orders.filter(o => o.id !== uniqueId && o.orderNumber !== orderNumber),
+      ];
+      saveToStorage(STORAGE_KEYS.ORDERS, updated);
+
+      // Déduction automatique du stock pour les articles commandés
+      try {
+        const products = await this.getProducts();
+        const itemsToDeduct = (data.items && data.items.length > 0)
+          ? data.items
+          : [{
+              productId: data.productId,
+              selectedColor: data.selectedColor,
+              selectedSize: data.selectedSize,
+              quantity: data.quantity,
+            }];
+
+        for (const item of itemsToDeduct) {
+          const product = products.find(p => p.id === item.productId);
+          if (product) {
+            const variantIdx = product.variants.findIndex(
+              v => v.colorName === item.selectedColor && v.size === item.selectedSize
+            );
+            if (variantIdx !== -1) {
+              product.variants[variantIdx].stock = Math.max(
+                0,
+                product.variants[variantIdx].stock - item.quantity
+              );
+              product.totalStock = product.variants.reduce((acc, v) => acc + v.stock, 0);
+              await this.updateProduct(product.id, {
+                variants: product.variants,
+                totalStock: product.totalStock,
+              });
+            }
+          }
+        }
+      } catch (stockErr) {
+        console.warn('Erreur lors de la déduction de stock:', stockErr);
+      }
+
+      return confirmedOrder;
     }
 
-    // 2. Cache local réactif
+    // 2. Repli hors-ligne / développement local uniquement si Supabase non configuré
     const updated = [
       newOrder,
       ...orders.filter(o => o.id !== uniqueId && o.orderNumber !== orderNumber),

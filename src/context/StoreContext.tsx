@@ -317,11 +317,29 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   useEffect(() => {
     if (!isAdminLoggedIn) return;
 
+    // Immediately fetch when becoming admin
+    loadData(true);
+
     const interval = setInterval(() => {
       loadData(true);
     }, 15000);
 
     return () => clearInterval(interval);
+  }, [isAdminLoggedIn]);
+
+  // Instantly fetch fresh orders from Supabase when admin tab regains focus or becomes visible
+  useEffect(() => {
+    const handleFocusOrVisible = () => {
+      if (document.visibilityState === 'visible' && isAdminLoggedIn) {
+        loadData(true);
+      }
+    };
+    window.addEventListener('focus', handleFocusOrVisible);
+    document.addEventListener('visibilitychange', handleFocusOrVisible);
+    return () => {
+      window.removeEventListener('focus', handleFocusOrVisible);
+      document.removeEventListener('visibilitychange', handleFocusOrVisible);
+    };
   }, [isAdminLoggedIn]);
 
   // Audio alert and notification when a new order appears in admin view
@@ -574,6 +592,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (pin === config.adminPin || pin === '1234') {
       setIsAdminLoggedIn(true);
       sessionStorage.setItem('elissia_admin_auth', 'true');
+      loadData(true);
       showToast('Connexion administrateur réussie', 'success');
       return true;
     } else {
@@ -593,6 +612,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const demoLoginAdmin = () => {
     setIsAdminLoggedIn(true);
     sessionStorage.setItem('elissia_admin_auth', 'true');
+    loadData(true);
     setCurrentView('admin');
     window.scrollTo({ top: 0, behavior: 'smooth' });
     showToast('Accès au Tableau de Bord Gérant', 'info');
