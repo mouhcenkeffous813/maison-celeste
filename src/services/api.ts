@@ -407,7 +407,48 @@ export const api = {
 
   // ===================== STORE CONFIG (WHITE-LABEL) =====================
   async getStoreConfig(): Promise<StoreConfig> {
-    const config = loadFromStorage<StoreConfig>(STORAGE_KEYS.CONFIG, DEFAULT_STORE_CONFIG);
+    let config = loadFromStorage<StoreConfig>(STORAGE_KEYS.CONFIG, DEFAULT_STORE_CONFIG);
+
+    // Synchronisation depuis le Cloud Supabase (si configuré)
+    if (supabase && isSupabaseConfigured) {
+      try {
+        const { data, error } = await supabase
+          .from('store_config')
+          .select('*')
+          .eq('id', 'current')
+          .maybeSingle();
+
+        if (!error && data) {
+          config = {
+            storeName: data.store_name ?? config.storeName,
+            storeTagline: data.store_tagline ?? config.storeTagline,
+            logoUrl: data.logo_url ?? config.logoUrl,
+            currency: data.currency ?? config.currency,
+            phone: data.phone ?? config.phone,
+            whatsappNumber: data.whatsapp_number ?? config.whatsappNumber,
+            instagramUrl: data.instagram_url ?? config.instagramUrl,
+            facebookUrl: data.facebook_url ?? config.facebookUrl,
+            tiktokUrl: data.tiktok_url ?? config.tiktokUrl,
+            freeShippingThreshold: Number(data.free_shipping_threshold ?? config.freeShippingThreshold),
+            theme: data.theme ?? config.theme,
+            metaPixelId: data.meta_pixel_id ?? config.metaPixelId,
+            tiktokPixelId: data.tiktok_pixel_id ?? config.tiktokPixelId,
+            deliveryTimeEstimate: data.delivery_time_estimate ?? config.deliveryTimeEstimate,
+            announcementText: data.announcement_text ?? config.announcementText,
+            adminPin: data.admin_pin ?? config.adminPin,
+          };
+          // Mise en cache locale silencieuse
+          try {
+            localStorage.setItem(STORAGE_KEYS.CONFIG, JSON.stringify(config));
+          } catch (e) {
+            // Ignorer si quota plein
+          }
+        }
+      } catch (err) {
+        // Table non créée ou indisponible, fallback transparent sur le stockage local
+      }
+    }
+
     applyThemeVariables(config.theme);
     return config;
   },
@@ -419,6 +460,39 @@ export const api = {
     if (updates.theme) {
       applyThemeVariables(updates.theme);
     }
+
+    // Synchronisation vers Supabase Cloud
+    if (supabase && isSupabaseConfigured) {
+      try {
+        const cloudPayload = {
+          id: 'current',
+          store_name: updated.storeName,
+          store_tagline: updated.storeTagline,
+          logo_url: updated.logoUrl,
+          currency: updated.currency,
+          phone: updated.phone,
+          whatsapp_number: updated.whatsappNumber,
+          instagram_url: updated.instagramUrl,
+          facebook_url: updated.facebookUrl,
+          tiktok_url: updated.tiktokUrl,
+          free_shipping_threshold: updated.freeShippingThreshold,
+          theme: updated.theme,
+          meta_pixel_id: updated.metaPixelId,
+          tiktok_pixel_id: updated.tiktokPixelId,
+          delivery_time_estimate: updated.deliveryTimeEstimate,
+          announcement_text: updated.announcementText,
+          admin_pin: updated.adminPin,
+          updated_at: new Date().toISOString(),
+        };
+
+        await supabase
+          .from('store_config')
+          .upsert(cloudPayload, { onConflict: 'id' });
+      } catch (err) {
+        console.warn('Supabase store_config sync not ready, saved in localStorage only');
+      }
+    }
+
     return updated;
   },
 
